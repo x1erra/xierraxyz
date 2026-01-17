@@ -12,6 +12,9 @@ export default function Starfield() {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
+        let width = 0;
+        let height = 0;
+
         const setupCanvas = () => {
             if (!canvas || !ctx) return;
 

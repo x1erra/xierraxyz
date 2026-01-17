@@ -95,11 +95,9 @@ export default function Starfield() {
             if (shootingStar.active) {
                 shootingStar.x += shootingStar.vx;
                 shootingStar.y += shootingStar.vy;
-                shootingStar.life -= 0.01;
-
-                if (shootingStar.life <= 0 ||
-                    shootingStar.x < 0 || shootingStar.x > width ||
-                    shootingStar.y < 0 || shootingStar.y > height) {
+                if (
+                    shootingStar.x < -100 || shootingStar.x > width + 100 ||
+                    shootingStar.y < -100 || shootingStar.y > height + 100) {
                     shootingStar.active = false;
                 } else {
                     const tailX = shootingStar.x - shootingStar.vx * 15;

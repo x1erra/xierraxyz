@@ -11,7 +11,12 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
-  overflow: hidden; /* Prevent scrolling */
+  overflow: hidden;
+  /* Prevent scrolling */
   margin: 0;
   padding: 0;
+  overscroll-behavior: none;
+  /* Prevent iOS elastic bounce */
+  touch-action: none;
+  /* unexpected pinch/zoom */
 }

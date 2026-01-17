@@ -20,17 +20,20 @@ export default function Starfield() {
 
             // Handle High DPI (Retina) displays for crisp stars
             const dpr = window.devicePixelRatio || 1;
-            const rect = canvas.getBoundingClientRect();
 
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
+            // Use window geometry for logic to ensure full screen coverage
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
 
             // Scale context to ensure drawing operations match CSS pixels
             ctx.scale(dpr, dpr);
 
             // Update physics bounds
-            width = rect.width;
-            height = rect.height;
+            width = w;
+            height = h;
         };
 
         // Initial setup

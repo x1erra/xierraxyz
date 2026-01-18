@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTheatre, SyncAction } from '../../hooks/useTheatre';
 import SkinContainer from './SkinContainer';
-import VideoPlayer from './VideoPlayer';
+import VideoPlayer, { VideoPlayerHandle } from './VideoPlayer';
 import VideoQueue from './VideoQueue';
 import Chat from './Chat';
 import { Monitor, Maximize, MessageSquareOff, Settings, Users } from 'lucide-react';
@@ -26,10 +26,16 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
+    const videoPlayerRef = useRef<VideoPlayerHandle>(null);
+
+    const getVideoTime = useCallback(() => {
+        return videoPlayerRef.current?.getCurrentTime() ?? 0;
+    }, []);
+
     const {
         messages, sendMessage, sendSync, setOnSyncEvent,
-        peers, queue, currentVideoUrl, isPlaying
-    } = useTheatre(effectiveRoomId, username);
+        peers, queue, currentVideoUrl, isPlaying, syncTime
+    } = useTheatre(effectiveRoomId, username, getVideoTime);
 
     const [skin, setSkin] = useState<'traditional' | 'modern' | 'space'>('space');
     const [viewMode, setViewMode] = useState<'default' | 'fullscreen' | 'cinema'>('default');
@@ -82,6 +88,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                             url={currentVideoUrl}
                             isPlaying={isPlaying}
                             onSync={handleSync}
+                            syncTime={syncTime}
                         />
                         <div className="absolute top-8 right-8 z-50 opacity-0 hover:opacity-100 transition-opacity duration-300">
                             <button onClick={() => setViewMode('default')} className="bg-black/50 hover:bg-black/80 backdrop-blur text-white px-4 py-2 rounded-full border border-white/10 text-sm font-medium flex items-center gap-2 transition-all">
@@ -263,9 +270,11 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
 
                                 <div className="relative w-full h-full aspect-video lg:aspect-auto bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 ring-1 ring-white/5">
                                     <VideoPlayer
+                                        ref={videoPlayerRef}
                                         url={currentVideoUrl}
                                         isPlaying={isPlaying}
                                         onSync={handleSync}
+                                        syncTime={syncTime}
                                     />
                                 </div>
                             </motion.div>

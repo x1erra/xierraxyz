@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import dynamic from 'next/dynamic';
 import { SyncAction } from '../../hooks/useTheatre';
 import IdleScreen from './IdleScreen';
@@ -16,10 +16,23 @@ interface VideoPlayerProps {
     muted?: boolean;
 }
 
-export default function VideoPlayer({ url, isPlaying, onSync, syncTime }: VideoPlayerProps) {
+export interface VideoPlayerHandle {
+    getCurrentTime: () => number;
+}
+
+const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ url, isPlaying, onSync, syncTime }, ref) => {
     const playerRef = useRef<any>(null);
     const [ready, setReady] = useState(false);
     const lastSyncTimeRef = useRef(0);
+
+    useImperativeHandle(ref, () => ({
+        getCurrentTime: () => {
+            if (playerRef.current) {
+                return playerRef.current.getCurrentTime();
+            }
+            return 0;
+        }
+    }));
 
     // Sync effect: If network time drifts significantly from local time, seek.
     useEffect(() => {
@@ -79,6 +92,8 @@ export default function VideoPlayer({ url, isPlaying, onSync, syncTime }: VideoP
                     // If progress jumps by more than 2 seconds (given 1s interval), assume seek
                     // Also ensure we are ready and not just starting
                     if (ready && diff > 2) {
+                        // To avoid spamming seek on initial load or sync events, maybe check time?
+                        // But simple diff check is usually enough if 'ready' is true.
                         onSync({ type: 'SEEK', time: currentSeconds });
                     }
 
@@ -91,4 +106,8 @@ export default function VideoPlayer({ url, isPlaying, onSync, syncTime }: VideoP
             />
         </div>
     );
-}
+});
+
+VideoPlayer.displayName = "VideoPlayer";
+
+export default VideoPlayer;

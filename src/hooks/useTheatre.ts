@@ -19,7 +19,17 @@ export type SyncAction =
     | { type: 'QUEUE_ADD'; url: string }
     | { type: 'QUEUE_REMOVE'; index: number }
     | { type: 'QUEUE_PLAY_NEXT' }
-    | { type: 'SKIN_CHANGE'; skin: string };
+    | { type: 'SKIN_CHANGE'; skin: string }
+    | { type: 'REQUEST_STATE' }
+    | {
+        type: 'SYNC_STATE';
+        state: {
+            queue: string[];
+            currentVideoUrl: string | null;
+            isPlaying: boolean;
+            timestamp: number;
+        }
+    };
 
 export type ChatMessage = {
     sender: string;
@@ -28,17 +38,35 @@ export type ChatMessage = {
     id: string; // for React keys
 };
 
-export const useTheatre = (roomId: string, username: string) => {
+export const useTheatre = (roomId: string, username: string, getVideoTime?: () => number) => {
     const [peers, setPeers] = useState<string[]>([]);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [queue, setQueue] = useState<string[]>([]);
     const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [syncTime, setSyncTime] = useState(0);
     const [roomState, setRoomState] = useState<any>(null); // For raw access if needed
+
+    // Refs for state access in callbacks
+    const queueRef = useRef(queue);
+    const currentVideoUrlRef = useRef(currentVideoUrl);
+    const isPlayingRef = useRef(isPlaying);
+
+    useEffect(() => {
+        queueRef.current = queue;
+    }, [queue]);
+
+    useEffect(() => {
+        currentVideoUrlRef.current = currentVideoUrl;
+    }, [currentVideoUrl]);
+
+    useEffect(() => {
+        isPlayingRef.current = isPlaying;
+    }, [isPlaying]);
 
     // Actions
     const sendMessageRef = useRef<(data: ChatMessage) => void>(null);
-    const sendSyncRef = useRef<(data: SyncAction) => void>(null);
+    const sendSyncRef = useRef<(data: SyncAction, peerId?: string) => void>(null);
 
     // Event callbacks (to be set by consumer)
     const onSyncEventRef = useRef<(action: SyncAction) => void>(null);
@@ -72,7 +100,7 @@ export const useTheatre = (roomId: string, username: string) => {
             sendSyncRef.current = sendSyncAction;
             getSync((action: any, peerId: any) => {
                 // Handle internal state updates
-                console.log('Received sync action:', action);
+                // console.log('Received sync action:', action); // Too spammy for seek?
                 handleSyncAction(action);
                 // Notify consumer
                 if (onSyncEventRef.current) {
@@ -84,12 +112,21 @@ export const useTheatre = (roomId: string, username: string) => {
             room.onPeerJoin((peerId: any) => {
                 console.log(`Peer ${peerId} joined`);
                 setPeers(prev => [...prev, peerId]);
+                // We no longer push state immediately; we wait for REQUEST_STATE
             });
 
             room.onPeerLeave((peerId: any) => {
                 console.log(`Peer ${peerId} left`);
                 setPeers(prev => prev.filter(p => p !== peerId));
             });
+
+            // On join, request state from peers
+            // Wait a moment for connection to stabilize? Or send immediately.
+            // sendSyncAction is available here.
+            setTimeout(() => {
+                console.log('[Theatre] Requesting state from peers...');
+                sendSyncAction({ type: 'REQUEST_STATE' });
+            }, 1000); // Small delay to ensuring we are connected to relays
         }
 
         return () => {
@@ -98,7 +135,7 @@ export const useTheatre = (roomId: string, username: string) => {
     }, [roomId]);
 
     const handleSyncAction = (action: SyncAction) => {
-        console.log('[Theatre] handleSyncAction called with:', action);
+        // console.log('[Theatre] handleSyncAction called with:', action.type);
         switch (action.type) {
             case 'PLAY':
                 console.log('[Theatre] Setting isPlaying to true');
@@ -106,6 +143,19 @@ export const useTheatre = (roomId: string, username: string) => {
                 break;
             case 'PAUSE':
                 setIsPlaying(false);
+                break;
+            case 'SEEK':
+                console.log('[Theatre] SEEK to:', action.time);
+                setSyncTime(action.time);
+                break;
+            case 'SYNC_STATE':
+                console.log('[Theatre] Received SYNC_STATE from peer');
+                // Only accept state if we are "behind" or joining? 
+                // For simplified logic, always accept logic that claims to be state.
+                setQueue(action.state.queue);
+                setCurrentVideoUrl(action.state.currentVideoUrl);
+                setIsPlaying(action.state.isPlaying);
+                setSyncTime(action.state.timestamp);
                 break;
             case 'QUEUE_ADD':
                 console.log('[Theatre] QUEUE_ADD - adding URL:', action.url);
@@ -134,30 +184,11 @@ export const useTheatre = (roomId: string, username: string) => {
                 break;
             case 'QUEUE_PLAY_NEXT':
                 console.log('[Theatre] QUEUE_PLAY_NEXT called');
-                // We need to know the current queue to decide what to play next
-                // But we can't reliably read 'queue' state here if it's stale in closure?
-                // Actually, handleSyncAction is recreated if we use useCallback?
-                // No, it's defined inside the hook, so it captures current scope.
-                // Better approach: use a functional update for queue, and derive the next video from it.
-                // BUT we can't update two states atomically easily without a reducer.
-                // For now, let's trust the current 'queue' state from the closure if valid, 
-                // OR use setQueue callback to determine next but trigger side effect via useEffect?
-                // Simplest fix: perform read and writes sequentially.
-
                 setQueue(currentQueue => {
                     const [next, ...rest] = currentQueue;
                     console.log('[Theatre] Playing next video:', next);
 
-                    // Side effect: Update other states. 
-                    // Note: This is still technically a side effect in render phase if interrupted, 
-                    // but standard useState updates batch well. 
-                    // The issue before was likely just concurrency or closure staleness.
-                    // Let's force the update outside the return to be clearer.
-
                     if (next) {
-                        // We found a video. Schedule its play.
-                        // Using setTimeout to break out of the render phase of setQueue? 
-                        // No, React batches.
                         setCurrentVideoUrl(next);
                         setIsPlaying(true);
                     } else {
@@ -167,6 +198,35 @@ export const useTheatre = (roomId: string, username: string) => {
 
                     return rest;
                 });
+                break;
+            case 'SKIN_CHANGE':
+                // Handled by consumer via onSyncEvent
+                break;
+            case 'REQUEST_STATE':
+                console.log('[Theatre] Received REQUEST_STATE');
+                // Only send state if we are "hosting" content (playing or have queue)
+                // This prevents empty states from overwriting meaningful ones if race conditions occur,
+                // though usually only one person has content initially. 
+                // Better: if we have *something*, share it.
+                if (queueRef.current.length > 0 || isPlayingRef.current) {
+                    const currentTime = getVideoTime ? getVideoTime() : 0;
+                    const stateBlock = {
+                        queue: queueRef.current,
+                        currentVideoUrl: currentVideoUrlRef.current,
+                        isPlaying: isPlayingRef.current,
+                        timestamp: currentTime
+                    };
+                    console.log('[Theatre] Sending SYNC_STATE response:', stateBlock);
+                    // Broadcast to everyone (simplest) or could target sender if action had senderId
+                    // Since 'action' in Trystero doesn't include metadata in the payload unless we add it,
+                    // we'll broadcast. It acts as a "State Update" for everyone which is fine.
+                    if (sendSyncRef.current) {
+                        sendSyncRef.current({
+                            type: 'SYNC_STATE',
+                            state: stateBlock
+                        });
+                    }
+                }
                 break;
         }
     };
@@ -184,12 +244,12 @@ export const useTheatre = (roomId: string, username: string) => {
     };
 
     const sendSync = (action: SyncAction) => {
-        console.log('[Theatre] sendSync called with action:', action);
+        // console.log('[Theatre] sendSync called with action:', action.type);
         // Always apply locally first (Optimistic UI) regarding of connection status
         handleSyncAction(action);
 
         if (sendSyncRef.current) {
-            console.log('[Theatre] Broadcasting to peers');
+            // console.log('[Theatre] Broadcasting to peers');
             sendSyncRef.current(action);
         } else {
             console.warn('[Theatre] Trystero not connected, action applied locally only:', action.type);
@@ -209,6 +269,7 @@ export const useTheatre = (roomId: string, username: string) => {
         // State
         queue,
         currentVideoUrl,
-        isPlaying
+        isPlaying,
+        syncTime
     };
 };

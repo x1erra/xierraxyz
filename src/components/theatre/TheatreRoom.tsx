@@ -197,57 +197,58 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                 ${skin === 'modern' ? 'bg-black/40 border-white/10' : ''}
                                 ${skin === 'cosmic' ? 'bg-zinc-950/20 border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : ''}
                             `}>
-                                {/* Theme Selector Dropdown */}
-                                <div className="relative z-50">
-                                    <button
-                                        onClick={() => setIsSkinMenuOpen(!isSkinMenuOpen)}
-                                        onBlur={() => setTimeout(() => setIsSkinMenuOpen(false), 200)}
-                                        className={`flex items-center gap-2 text-xs uppercase tracking-wider font-medium py-2 px-3 rounded-lg transition-all border border-transparent
-                                            ${skin === 'traditional' ? 'hover:bg-[#ffd700]/10 text-[#ffd700]' : ''}
-                                            ${skin === 'modern' ? 'hover:bg-white/10 text-white' : ''}
-                                            ${skin === 'cosmic' ? 'hover:bg-white/10 text-zinc-200' : ''}
-                                        `}
-                                    >
-                                        <Settings size={14} className={isSkinMenuOpen ? 'animate-spin-slow' : ''} />
-                                        <span>{skin}</span>
-                                    </button>
+                                {!isMobile && (
+                                    <div className="relative z-50">
+                                        <button
+                                            onClick={() => setIsSkinMenuOpen(!isSkinMenuOpen)}
+                                            onBlur={() => setTimeout(() => setIsSkinMenuOpen(false), 200)}
+                                            className={`flex items-center gap-2 text-xs uppercase tracking-wider font-medium py-2 px-3 rounded-lg transition-all border border-transparent
+                                                ${skin === 'traditional' ? 'hover:bg-[#ffd700]/10 text-[#ffd700]' : ''}
+                                                ${skin === 'modern' ? 'hover:bg-white/10 text-white' : ''}
+                                                ${skin === 'cosmic' ? 'hover:bg-white/10 text-zinc-200' : ''}
+                                            `}
+                                        >
+                                            <Settings size={14} className={isSkinMenuOpen ? 'animate-spin-slow' : ''} />
+                                            <span>{skin}</span>
+                                        </button>
 
-                                    <AnimatePresence>
-                                        {isSkinMenuOpen && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                                                className={`absolute top-full right-0 mt-2 w-40 py-2 rounded-xl border backdrop-blur-xl shadow-xl overflow-hidden flex flex-col
-                                                    ${skin === 'traditional' ? 'bg-[#2a0505]/95 border-[#ffd700]/30' : ''}
-                                                    ${skin === 'modern' ? 'bg-zinc-900/95 border-white/10' : ''}
-                                                    ${skin === 'cosmic' ? 'bg-black/95 border-white/10' : ''}
-                                                `}
-                                            >
-                                                {['traditional', 'modern', 'cosmic'].map((s) => (
-                                                    <button
-                                                        key={s}
-                                                        onClick={() => {
-                                                            handleSkinChange(s);
-                                                            setIsSkinMenuOpen(false);
-                                                        }}
-                                                        className={`text-left px-4 py-2.5 text-xs uppercase tracking-widest transition-colors flex items-center gap-2
-                                                            ${skin === s ? 'font-bold' : 'font-medium opacity-60 hover:opacity-100'}
-                                                            ${skin === 'traditional' ? 'text-[#ffd700] hover:bg-[#ffd700]/10' : ''}
-                                                            ${skin === 'modern' ? 'text-white hover:bg-white/10' : ''}
-                                                            ${skin === 'cosmic' ? 'text-white hover:bg-white/10' : ''}
-                                                        `}
-                                                    >
-                                                        <div className={`w-2 h-2 rounded-full ${skin === s ? 'opacity-100' : 'opacity-0'} 
-                                                            ${skin === 'traditional' ? 'bg-[#ffd700]' : 'bg-current'}
-                                                        `} />
-                                                        {s}
-                                                    </button>
-                                                ))}
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
+                                        <AnimatePresence>
+                                            {isSkinMenuOpen && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                    className={`absolute top-full right-0 mt-2 w-40 py-2 rounded-xl border backdrop-blur-xl shadow-xl overflow-hidden flex flex-col
+                                                        ${skin === 'traditional' ? 'bg-[#2a0505]/95 border-[#ffd700]/30' : ''}
+                                                        ${skin === 'modern' ? 'bg-zinc-900/95 border-white/10' : ''}
+                                                        ${skin === 'cosmic' ? 'bg-black/95 border-white/10' : ''}
+                                                    `}
+                                                >
+                                                    {['traditional', 'modern', 'cosmic'].map((s) => (
+                                                        <button
+                                                            key={s}
+                                                            onClick={() => {
+                                                                handleSkinChange(s);
+                                                                setIsSkinMenuOpen(false);
+                                                            }}
+                                                            className={`text-left px-4 py-2.5 text-xs uppercase tracking-widest transition-colors flex items-center gap-2
+                                                                ${skin === s ? 'font-bold' : 'font-medium opacity-60 hover:opacity-100'}
+                                                                ${skin === 'traditional' ? 'text-[#ffd700] hover:bg-[#ffd700]/10' : ''}
+                                                                ${skin === 'modern' ? 'text-white hover:bg-white/10' : ''}
+                                                                ${skin === 'cosmic' ? 'text-white hover:bg-white/10' : ''}
+                                                            `}
+                                                        >
+                                                            <div className={`w-2 h-2 rounded-full ${skin === s ? 'opacity-100' : 'opacity-0'} 
+                                                                ${skin === 'traditional' ? 'bg-[#ffd700]' : 'bg-current'}
+                                                            `} />
+                                                            {s}
+                                                        </button>
+                                                    ))}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                )}
 
                                 {!isMobile ? (
                                     <>
@@ -306,6 +307,18 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                     <>
                                         {/* Mobile Menu Toggle */}
                                         <div className={`w-px h-6 mx-2 ${skin === 'traditional' ? 'bg-[#ffd700]/20' : 'bg-white/10'}`} />
+
+                                        {/* Mobile: Copy Link Button on bar */}
+                                        <button
+                                            onClick={handleCopyLink}
+                                            className={`p-2 rounded-lg transition-all active:scale-95
+                                                ${skin === 'traditional' ? 'text-[#ffd700] hover:bg-[#ffd700]/10' : 'text-white hover:bg-white/10'}
+                                            `}
+                                            title="Copy Invite Link"
+                                        >
+                                            {copied ? <Check size={18} /> : <LinkIcon size={18} />}
+                                        </button>
+
                                         <div className="relative z-50">
                                             <button
                                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -328,15 +341,27 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                                             ${skin === 'cosmic' ? 'bg-black/95 border-white/10' : ''}
                                                         `}
                                                     >
-                                                        {/* Mobile Components */}
-                                                        <button
-                                                            onClick={() => { handleCopyLink(); setIsMobileMenuOpen(false); }}
-                                                            className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors"
-                                                        >
-                                                            {copied ? <Check size={14} className="text-green-400" /> : <LinkIcon size={14} />}
-                                                            Copy Link
-                                                        </button>
+                                                        {/* Theme Options */}
+                                                        <div className="px-4 py-2 text-xs font-bold opacity-50 uppercase tracking-wider">Theme</div>
+                                                        {['traditional', 'modern', 'cosmic'].map((s) => (
+                                                            <button
+                                                                key={s}
+                                                                onClick={() => {
+                                                                    handleSkinChange(s);
+                                                                    setIsMobileMenuOpen(false); // Optional: keep open if they want to browse properties? usually close on selection
+                                                                }}
+                                                                className={`flex items-center gap-3 px-4 py-2 text-sm hover:bg-white/5 transition-colors uppercase tracking-widest
+                                                                    ${skin === s ? 'text-green-400 font-bold' : 'opacity-70'}
+                                                                `}
+                                                            >
+                                                                <div className={`w-1.5 h-1.5 rounded-full ${skin === s ? 'bg-green-400' : 'bg-white/30'}`} />
+                                                                {s}
+                                                            </button>
+                                                        ))}
 
+                                                        <div className="my-2 border-t border-white/10" />
+
+                                                        {/* Queue / Chat / Fullscreen */}
                                                         <button
                                                             onClick={() => { setShowQueue(!showQueue); setIsMobileMenuOpen(false); }}
                                                             className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors"

@@ -34,7 +34,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
 
     const {
         messages, sendMessage, sendSync, setOnSyncEvent,
-        peers, queue, currentVideoUrl, isPlaying, syncTime
+        peers, queue, currentVideoUrl, isPlaying, syncTime, requestState
     } = useTheatre(effectiveRoomId, username, getVideoTime);
 
     const [skin, setSkin] = useState<'traditional' | 'modern' | 'space'>('space');
@@ -129,6 +129,13 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                         <span className="text-[9px] uppercase tracking-widest opacity-60 font-medium">
                                             {peers.length + 1} Connected
                                         </span>
+                                        <button
+                                            onClick={() => requestState()}
+                                            className="ml-2 text-[9px] uppercase tracking-widest text-cyan-500 opacity-60 hover:opacity-100 hover:underline"
+                                            title="Force re-sync with peers"
+                                        >
+                                            RESYNC
+                                        </button>
                                     </div>
                                 </div>
                             </div>

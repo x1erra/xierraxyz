@@ -8,7 +8,11 @@ const config = {
         'wss://relay.damus.io',
         'wss://relay.snort.social',
         'wss://nos.lol',
-        'wss://relay.primal.net'
+        'wss://relay.primal.net',
+        'wss://relay.nostr.band',
+        'wss://relay.zbd.gg',
+        'wss://nostr.wine',
+        'wss://relay.plebstr.com'
     ]
 };
 
@@ -260,12 +264,18 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
         onSyncEventRef.current = cb;
     };
 
+    const requestState = () => {
+        console.log('[Theatre] Manually requesting state');
+        sendSync({ type: 'REQUEST_STATE' });
+    };
+
     return {
         peers,
         messages,
         sendMessage,
         sendSync,
         setOnSyncEvent,
+        requestState,
         // State
         queue,
         currentVideoUrl,

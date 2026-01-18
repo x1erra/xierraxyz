@@ -94,13 +94,13 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
 
             {/* Input Area */}
             <div className="flex-none p-5 border-t border-white/10 bg-black/60 backdrop-blur-xl">
-                <div className={`relative flex items-center gap-2 bg-zinc-900/80 border rounded-full p-1.5 pr-2 transition-all duration-300 ${isFocused ? 'border-white/40 shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)]' : 'border-white/10 hover:border-white/20'}`}>
-                    <button className="p-2 text-zinc-500 hover:text-white transition-colors rounded-full hover:bg-white/5 ml-1">
+                <div className={`relative flex items-center bg-zinc-900/80 border rounded-full p-1.5 transition-all duration-300 ${isFocused ? 'border-white/40 shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)]' : 'border-white/10 hover:border-white/20'}`}>
+                    <button className="p-2 text-zinc-500 hover:text-white transition-colors rounded-full hover:bg-white/5 ml-1 flex-none">
                         <Smile size={18} />
                     </button>
 
                     <input
-                        className="flex-1 bg-transparent text-white text-base focus:outline-none placeholder-zinc-600 font-medium h-full py-2 px-2"
+                        className="flex-1 bg-transparent text-white text-base focus:outline-none placeholder-zinc-600 font-medium h-full py-2 px-2 pr-12 min-w-0"
                         placeholder="Type a message..."
                         value={text}
                         onChange={(e) => setText(e.target.value)}
@@ -111,7 +111,7 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
 
                     <button
                         onClick={handleSend}
-                        className={`p-2 rounded-full transition-all duration-300 ${text.trim()
+                        className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-full transition-all duration-300 ${text.trim()
                             ? 'bg-white text-black transform hover:scale-105 shadow-[0_0_15px_rgba(255,255,255,0.4)]'
                             : 'bg-white/5 text-zinc-600 hover:bg-white/10'
                             }`}

@@ -6,13 +6,14 @@ import { SyncAction } from '../../hooks/useTheatre';
 import IdleScreen from './IdleScreen';
 
 // Dynamic import to handle SSR and potentially fix type issues
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false }) as any;
+const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false }) as any;
 
 interface VideoPlayerProps {
     url: string | null;
     isPlaying: boolean;
     onSync: (action: SyncAction) => void;
     syncTime?: number;
+    muted?: boolean;
 }
 
 export default function VideoPlayer({ url, isPlaying, onSync, syncTime }: VideoPlayerProps) {
@@ -25,7 +26,6 @@ export default function VideoPlayer({ url, isPlaying, onSync, syncTime }: VideoP
         if (syncTime !== undefined && playerRef.current && ready) {
             const current = playerRef.current.getCurrentTime();
             if (Math.abs(current - syncTime) > 2) {
-                console.log(`Syncing: Local ${current} -> Remote ${syncTime}`);
                 playerRef.current.seekTo(syncTime, 'seconds');
             }
         }
@@ -44,30 +44,50 @@ export default function VideoPlayer({ url, isPlaying, onSync, syncTime }: VideoP
                 height="100%"
                 playing={isPlaying}
                 onReady={() => setReady(true)}
-                controls={true} // Allow local controls, which will trigger events
+                controls={true} // Allow local controls
+                muted={false} // Start unmuted, but we might need to handle autoplay blocks
+
+                // Error handling for autoplay blocks
+                onError={(e: any) => {
+                    // If error is related to autoplay, we might validly want to pause
+                    // But for now just log it.
+                }}
 
                 onPlay={() => {
-                    // Check if this was a user action or prop update?
-                    // ReactPlayer fires onPlay when 'playing' prop becomes true too.
-                    // Simple de-dupe: if isPlaying prop is already true, ignore? 
-                    if (!isPlaying) onSync({ type: 'PLAY' });
+                    // Only trigger sync if we are NOT already supposed to be playing
+                    // This prevents loops where incoming sync sets isPlaying=true, player plays, fires onPlay, sends sync...
+                    if (!isPlaying) {
+                        console.log('User pressed Play, sending sync');
+                        onSync({ type: 'PLAY' });
+                    }
                 }}
 
                 onPause={() => {
-                    if (isPlaying) onSync({ type: 'PAUSE' });
+                    // Only trigger sync if we ARE supposed to be playing
+                    if (isPlaying) {
+                        console.log('User pressed Pause, sending sync');
+                        onSync({ type: 'PAUSE' });
+                    }
                 }}
 
-                onProgress={(state: any) => {
-                    // Check if we sought
-                    // This is tricky with react-player. Usually easier to just set an interval in parent
-                    // or rely on explicit onSeek if standard controls are used.
-                    // For now, we rely on standard controls.
+                onProgress={(state: { playedSeconds: number }) => {
+                    // Detect Sync/Seek via progress jumps
+                    const currentSeconds = state.playedSeconds;
+                    const prevSeconds = lastSyncTimeRef.current;
+                    const diff = Math.abs(currentSeconds - prevSeconds);
+
+                    // If progress jumps by more than 2 seconds (given 1s interval), assume seek
+                    // Also ensure we are ready and not just starting
+                    if (ready && diff > 2) {
+                        onSync({ type: 'SEEK', time: currentSeconds });
+                    }
+
+                    lastSyncTimeRef.current = currentSeconds;
                 }}
 
-                onSeek={(seconds: any) => {
-                    // This fires when user seeks via native controls
-                    onSync({ type: 'SEEK', time: seconds });
-                }}
+            // onSeek removed to prevent "Unknown event handler" error props spreading to DOM
+            // react-player sometimes passes this through if not consumed by internal player
+
             />
         </div>
     );

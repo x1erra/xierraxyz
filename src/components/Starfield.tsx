@@ -59,9 +59,28 @@ export default function Starfield() {
         const render = () => {
             if (!canvas || !ctx) return;
 
-            // Clear with black
-            ctx.fillStyle = "black";
+            // Clear with deep space black/blue tint
+            ctx.fillStyle = "#020204";
             ctx.fillRect(0, 0, width, height);
+
+            // Draw Nebula effects (static or slowly moving background layers)
+            // We simulate this by drawing large radial gradients
+            const drawNebula = (x: number, y: number, radius: number, color: string) => {
+                const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+                grad.addColorStop(0, color);
+                grad.addColorStop(1, "transparent");
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Purple nebula top right
+            drawNebula(width * 0.8, height * 0.2, 500, "rgba(76, 29, 149, 0.15)");
+            // Cyan nebula bottom left
+            drawNebula(width * 0.2, height * 0.8, 600, "rgba(8, 145, 178, 0.1)");
+            // Blue center deep
+            drawNebula(width * 0.5, height * 0.5, 800, "rgba(30, 58, 138, 0.05)");
 
             const cx = width / 2;
             const cy = height / 2;

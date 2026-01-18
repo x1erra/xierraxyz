@@ -58,7 +58,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(({ url, isPl
                 playing={isPlaying}
                 onReady={() => setReady(true)}
                 controls={true} // Allow local controls
-                muted={false} // Start unmuted, but we might need to handle autoplay blocks
+                muted={true} // MUST be true for autoplay to work on most browsers (especially mobile)
+                playsinline={true} // Critical for iOS mobile playback
 
                 // Error handling for autoplay blocks
                 onError={(e: any) => {

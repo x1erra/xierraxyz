@@ -13,7 +13,7 @@ interface SkinContainerProps {
 
 export default function SkinContainer({ variant, children }: SkinContainerProps) {
     return (
-        <div className="relative w-full h-screen overflow-hidden bg-black transition-colors duration-1000">
+        <div className="relative w-full h-screen overflow-hidden bg-black transition-colors duration-1000 select-none">
             {/* Background Layers */}
             {variant === 'cosmic' && (
                 <div className="absolute inset-0 z-0">

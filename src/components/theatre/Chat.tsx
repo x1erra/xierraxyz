@@ -30,7 +30,7 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
     };
 
     return (
-        <div className="flex flex-col h-full bg-zinc-900/95 backdrop-blur-2xl border-l border-white/10 w-full h-full shadow-2xl font-sans">
+        <div className="flex flex-col h-full bg-zinc-900/95 backdrop-blur-2xl border-l border-white/10 w-full h-full shadow-2xl font-sans select-none">
             {/* Header */}
             <div className="flex-none p-5 border-b border-white/5 bg-gradient-to-l from-black/40 to-transparent flex items-center justify-between">
                 <div className="flex items-center gap-2.5 text-white">
@@ -100,7 +100,7 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
                     </button>
 
                     <input
-                        className="flex-1 bg-transparent text-white text-base focus:outline-none placeholder-zinc-600 font-medium h-full py-2 px-2 pr-12 min-w-0"
+                        className="flex-1 bg-transparent text-white text-base focus:outline-none placeholder-zinc-600 font-medium h-full py-2 px-2 pr-12 min-w-0 select-text"
                         placeholder="Type a message..."
                         value={text}
                         onChange={(e) => setText(e.target.value)}

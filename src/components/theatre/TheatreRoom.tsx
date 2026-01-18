@@ -96,7 +96,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
     // font-playfair, font-inter, font-orbitron
 
     return (
-        <div className={`w-full h-screen relative bg-black text-white overflow-hidden transition-all duration-500 
+        <div className={`w-full h-screen relative bg-black text-white overflow-hidden transition-all duration-500 select-none
             ${skin === 'traditional' ? 'font-[family-name:var(--font-playfair)]' : ''}
             ${skin === 'modern' ? 'font-[family-name:var(--font-inter)]' : ''}
             ${skin === 'cosmic' ? 'font-[family-name:var(--font-orbitron)]' : ''}

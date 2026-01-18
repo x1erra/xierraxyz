@@ -5,7 +5,7 @@ import Starfield from '../Starfield';
 
 export default function IdleScreen() {
     return (
-        <div className="relative w-full h-full bg-black flex flex-col items-center justify-center overflow-hidden font-sans">
+        <div className="relative w-full h-full bg-black flex flex-col items-center justify-center overflow-hidden font-sans select-none">
             <div className="absolute inset-0 z-0">
                 <Starfield />
             </div>

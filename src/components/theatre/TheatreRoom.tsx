@@ -6,7 +6,7 @@ import SkinContainer from './SkinContainer';
 import VideoPlayer, { VideoPlayerHandle } from './VideoPlayer';
 import VideoQueue from './VideoQueue';
 import Chat from './Chat';
-import { Monitor, Maximize, MessageSquareOff, Settings, Users, Link as LinkIcon, Check } from 'lucide-react';
+import { Monitor, Maximize, MessageSquareOff, Settings, Users, Link as LinkIcon, Check, MoreVertical, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TheatreRoomProps {
@@ -65,6 +65,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
     const [showChat, setShowChat] = useState(true);
     const [showQueue, setShowQueue] = useState(true);
     const [isSkinMenuOpen, setIsSkinMenuOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         setOnSyncEvent((action) => {
@@ -248,56 +249,123 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                     </AnimatePresence>
                                 </div>
 
-                                <div className={`w-px h-6 mx-2 ${skin === 'traditional' ? 'bg-[#ffd700]/20' : 'bg-white/10'}`} />
+                                {!isMobile ? (
+                                    <>
+                                        <div className={`w-px h-6 mx-2 ${skin === 'traditional' ? 'bg-[#ffd700]/20' : 'bg-white/10'}`} />
 
-                                <button
-                                    onClick={handleCopyLink}
-                                    className={`p-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden active:scale-95 hover:bg-white/10 opacity-60 hover:opacity-100`}
-                                    title="Copy Invite Link"
-                                >
-                                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity
-                                        ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-white/10'}
-                                    `} />
-                                    {copied ? (
-                                        <Check size={16} className="text-white relative z-10" />
-                                    ) : (
-                                        <LinkIcon size={16} className={`relative z-10 ${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
-                                    )}
-                                </button>
+                                        <button
+                                            onClick={handleCopyLink}
+                                            className={`p-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden active:scale-95 hover:bg-white/10 opacity-60 hover:opacity-100`}
+                                            title="Copy Invite Link"
+                                        >
+                                            <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity
+                                                ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-white/10'}
+                                            `} />
+                                            {copied ? (
+                                                <Check size={16} className="text-white relative z-10" />
+                                            ) : (
+                                                <LinkIcon size={16} className={`relative z-10 ${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
+                                            )}
+                                        </button>
 
-                                <div className={`w-px h-6 mx-2 ${skin === 'traditional' ? 'bg-[#ffd700]/20' : 'bg-white/10'}`} />
+                                        <div className={`w-px h-6 mx-2 ${skin === 'traditional' ? 'bg-[#ffd700]/20' : 'bg-white/10'}`} />
 
-                                <div className="flex gap-1">
-                                    <button
-                                        onClick={() => setShowQueue(!showQueue)}
-                                        className={`p-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden active:scale-95 ${!showQueue ? 'opacity-60 hover:bg-white/5' : 'bg-white/10 opacity-100 shadow-inner'}`}
-                                        title="Toggle Queue"
-                                    >
-                                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${showQueue ? 'opacity-100' : ''}
-                                            ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-white/5'}
-                                        `} />
-                                        <Monitor size={16} className={`relative z-10 ${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
-                                    </button>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => setShowQueue(!showQueue)}
+                                                className={`p-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden active:scale-95 ${!showQueue ? 'opacity-60 hover:bg-white/5' : 'bg-white/10 opacity-100 shadow-inner'}`}
+                                                title="Toggle Queue"
+                                            >
+                                                <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${showQueue ? 'opacity-100' : ''}
+                                                    ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-white/5'}
+                                                `} />
+                                                <Monitor size={16} className={`relative z-10 ${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
+                                            </button>
 
-                                    <button
-                                        onClick={() => setShowChat(!showChat)}
-                                        className={`p-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden active:scale-95 ${!showChat ? 'opacity-60 hover:bg-white/5' : 'bg-white/10 opacity-100 shadow-inner'}`}
-                                        title="Toggle Chat"
-                                    >
-                                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${showChat ? 'opacity-100' : ''}
-                                             ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-white/5'}
-                                        `} />
-                                        <MessageSquareOff size={16} className={`relative z-10 ${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
-                                    </button>
+                                            <button
+                                                onClick={() => setShowChat(!showChat)}
+                                                className={`p-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden active:scale-95 ${!showChat ? 'opacity-60 hover:bg-white/5' : 'bg-white/10 opacity-100 shadow-inner'}`}
+                                                title="Toggle Chat"
+                                            >
+                                                <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${showChat ? 'opacity-100' : ''}
+                                                     ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-white/5'}
+                                                `} />
+                                                <MessageSquareOff size={16} className={`relative z-10 ${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
+                                            </button>
 
-                                    <button
-                                        onClick={() => setViewMode('fullscreen')}
-                                        className="p-2.5 rounded-xl transition-all duration-200 opacity-60 hover:opacity-100 hover:bg-white/10 group relative active:scale-95"
-                                        title="Enter Fullscreen"
-                                    >
-                                        <Maximize size={16} className={`${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
-                                    </button>
-                                </div>
+                                            <button
+                                                onClick={() => setViewMode('fullscreen')}
+                                                className="p-2.5 rounded-xl transition-all duration-200 opacity-60 hover:opacity-100 hover:bg-white/10 group relative active:scale-95"
+                                                title="Enter Fullscreen"
+                                            >
+                                                <Maximize size={16} className={`${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* Mobile Menu Toggle */}
+                                        <div className={`w-px h-6 mx-2 ${skin === 'traditional' ? 'bg-[#ffd700]/20' : 'bg-white/10'}`} />
+                                        <div className="relative z-50">
+                                            <button
+                                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                                className={`p-2 rounded-lg transition-all active:scale-95
+                                                    ${skin === 'traditional' ? 'text-[#ffd700] hover:bg-[#ffd700]/10' : 'text-white hover:bg-white/10'}
+                                                `}
+                                            >
+                                                {isMobileMenuOpen ? <X size={18} /> : <MoreVertical size={18} />}
+                                            </button>
+
+                                            <AnimatePresence>
+                                                {isMobileMenuOpen && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                        className={`absolute top-full right-0 mt-2 w-48 py-2 rounded-xl border backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col z-[100]
+                                                            ${skin === 'traditional' ? 'bg-[#2a0505]/95 border-[#ffd700]/30' : ''}
+                                                            ${skin === 'modern' ? 'bg-zinc-900/95 border-white/10' : ''}
+                                                            ${skin === 'cosmic' ? 'bg-black/95 border-white/10' : ''}
+                                                        `}
+                                                    >
+                                                        {/* Mobile Components */}
+                                                        <button
+                                                            onClick={() => { handleCopyLink(); setIsMobileMenuOpen(false); }}
+                                                            className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors"
+                                                        >
+                                                            {copied ? <Check size={14} className="text-green-400" /> : <LinkIcon size={14} />}
+                                                            Copy Link
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => { setShowQueue(!showQueue); setIsMobileMenuOpen(false); }}
+                                                            className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors"
+                                                        >
+                                                            <Monitor size={14} className={showQueue ? "text-green-400" : ""} />
+                                                            Toggle Queue
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => { setShowChat(!showChat); setIsMobileMenuOpen(false); }}
+                                                            className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors"
+                                                        >
+                                                            <MessageSquareOff size={14} className={showChat ? "text-green-400" : ""} />
+                                                            Toggle Chat
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => { setViewMode('fullscreen'); setIsMobileMenuOpen(false); }}
+                                                            className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors"
+                                                        >
+                                                            <Maximize size={14} />
+                                                            Fullscreen
+                                                        </button>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </header>
 

@@ -100,7 +100,7 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
                     </button>
 
                     <input
-                        className="flex-1 bg-transparent text-white text-sm focus:outline-none placeholder-zinc-600 font-medium h-full py-2"
+                        className="flex-1 bg-transparent text-white text-base focus:outline-none placeholder-zinc-600 font-medium h-full py-2"
                         placeholder="Type a message..."
                         value={text}
                         onChange={(e) => setText(e.target.value)}

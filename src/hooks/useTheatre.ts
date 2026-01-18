@@ -174,8 +174,8 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                     // However, to ensure we catch the empty case:
                     setCurrentVideoUrl(currentUrl => {
                         if (!currentUrl) {
-                            console.log('[Theatre] Auto-playing first added video');
-                            setIsPlaying(true);
+                            console.log('[Theatre] First video added, setting to PAUSED state');
+                            setIsPlaying(false);
                             return action.url;
                         }
                         return currentUrl;

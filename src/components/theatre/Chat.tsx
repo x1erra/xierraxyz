@@ -48,7 +48,7 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent bg-[url('/noise.svg')] bg-repeat opacity-95" ref={scrollRef}>
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent bg-gradient-to-b from-transparent to-black/20" ref={scrollRef}>
                 {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-zinc-600 opacity-40">
                         <MessageSquare size={32} className="mb-3" />

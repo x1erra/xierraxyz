@@ -6,7 +6,7 @@ import SkinContainer from './SkinContainer';
 import VideoPlayer, { VideoPlayerHandle } from './VideoPlayer';
 import VideoQueue from './VideoQueue';
 import Chat from './Chat';
-import { Monitor, Maximize, MessageSquareOff, Settings, Users } from 'lucide-react';
+import { Monitor, Maximize, MessageSquareOff, Settings, Users, Link as LinkIcon, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TheatreRoomProps {
@@ -18,6 +18,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
     const [username] = useState(() => `User${Math.floor(Math.random() * 1000)}`);
     const effectiveRoomId = password ? `${roomId}-${password}` : roomId;
     const [isMobile, setIsMobile] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -25,6 +26,12 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const videoPlayerRef = useRef<VideoPlayerHandle>(null);
 
@@ -197,6 +204,23 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                         )}
                                     </AnimatePresence>
                                 </div>
+
+                                <div className={`w-px h-6 mx-2 ${skin === 'traditional' ? 'bg-[#ffd700]/20' : 'bg-white/10'}`} />
+
+                                <button
+                                    onClick={handleCopyLink}
+                                    className={`p-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden active:scale-95 hover:bg-white/10 opacity-60 hover:opacity-100`}
+                                    title="Copy Invite Link"
+                                >
+                                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity
+                                        ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-green-500/20'}
+                                    `} />
+                                    {copied ? (
+                                        <Check size={16} className="text-green-500 relative z-10" />
+                                    ) : (
+                                        <LinkIcon size={16} className={`relative z-10 ${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
+                                    )}
+                                </button>
 
                                 <div className={`w-px h-6 mx-2 ${skin === 'traditional' ? 'bg-[#ffd700]/20' : 'bg-white/10'}`} />
 

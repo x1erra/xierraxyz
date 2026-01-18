@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Playfair_Display, Inter, Orbitron } from "next/font/google"; // turbo
 import "./globals.css";
 
@@ -30,6 +30,13 @@ const orbitron = Orbitron({
 export const metadata: Metadata = {
   title: "xierra",
   description: "xierra",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

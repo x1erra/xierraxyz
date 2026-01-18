@@ -131,7 +131,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
 
                     <div className="flex flex-col h-full relative">
                         {/* Toolbar - Flex Item - Elevated Z-Index for accessibility over curtains */}
-                        <header className={`h-16 lg:h-24 flex-none flex items-center justify-between px-4 lg:px-8 z-[80] transition-all duration-500
+                        <header className={`h-16 lg:h-24 flex-none flex items-center justify-between px-4 lg:px-8 z-[80] transition-all duration-500 select-none
                             ${skin === 'traditional' ? 'bg-gradient-to-b from-[#2a0505] to-transparent border-b border-[#ffd700]/10' : ''}
                             ${skin === 'modern' ? 'bg-gradient-to-b from-black/90 via-black/50 to-transparent' : ''}
                             ${skin === 'cosmic' ? 'bg-gradient-to-b from-zinc-950/30 to-transparent' : ''}
@@ -160,7 +160,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                                         setNewRoomName(roomId);
                                                     }
                                                 }}
-                                                className="bg-transparent border-b border-white/50 focus:border-white outline-none w-32 font-normal opacity-100 z-50 pointer-events-auto"
+                                                className="bg-transparent border-b border-white/50 focus:border-white outline-none w-32 font-normal opacity-100 z-50 pointer-events-auto select-text"
                                             />
                                         ) : (
                                             <span
@@ -168,7 +168,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                                     setNewRoomName(roomId);
                                                     setIsEditingRoom(true);
                                                 }}
-                                                className="opacity-80 font-normal cursor-pointer hover:opacity-100 hover:underline decoration-white/30 truncate max-w-[150px] lg:max-w-xs"
+                                                className="opacity-80 font-normal cursor-pointer select-none hover:opacity-100 hover:underline decoration-white/30 truncate max-w-[150px] lg:max-w-xs"
                                                 title="Click to rename room"
                                             >
                                                 {roomId}
@@ -322,11 +322,11 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                         <div className="relative z-50">
                                             <button
                                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                                                className={`p-2 rounded-lg transition-all active:scale-95
+                                                className={`p-3 rounded-lg transition-all active:scale-95
                                                     ${skin === 'traditional' ? 'text-[#ffd700] hover:bg-[#ffd700]/10' : 'text-white hover:bg-white/10'}
                                                 `}
                                             >
-                                                {isMobileMenuOpen ? <X size={18} /> : <MoreVertical size={18} />}
+                                                {isMobileMenuOpen ? <X size={20} /> : <MoreVertical size={20} />}
                                             </button>
 
                                             <AnimatePresence>
@@ -335,7 +335,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                                         exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                                                        className={`absolute top-full right-0 mt-2 w-48 py-2 rounded-xl border backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col z-[100]
+                                                        className={`absolute top-full right-0 mt-4 w-56 py-2 rounded-xl border backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col z-[100]
                                                             ${skin === 'traditional' ? 'bg-[#2a0505]/95 border-[#ffd700]/30' : ''}
                                                             ${skin === 'modern' ? 'bg-zinc-900/95 border-white/10' : ''}
                                                             ${skin === 'cosmic' ? 'bg-black/95 border-white/10' : ''}

@@ -56,7 +56,7 @@ export default function VideoQueue({ queue, onAdd, onRemove, onPlayNext, onClear
                         <LinkIcon size={14} className={`transition-colors ${isFocused ? 'text-white' : 'text-zinc-600'}`} />
                     </div>
                     <input
-                        className="w-full bg-black/40 border border-white/10 text-white text-xs pl-10 pr-10 py-3 rounded-xl focus:outline-none focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all placeholder-zinc-600 font-medium tracking-wide shadow-inner select-text"
+                        className="w-full bg-black/40 border border-white/10 text-white text-base pl-10 pr-10 py-3 rounded-xl focus:outline-none focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all placeholder-zinc-600 font-medium tracking-wide shadow-inner select-text"
                         placeholder="Paste YouTube, Vimeo, or generic MP4..."
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}

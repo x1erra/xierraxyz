@@ -160,7 +160,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                                         setNewRoomName(roomId);
                                                     }
                                                 }}
-                                                className="bg-transparent border-b border-white/50 focus:border-white outline-none w-32 font-normal opacity-100 z-50 pointer-events-auto select-text"
+                                                className="bg-transparent border-b border-white/50 focus:border-white outline-none w-32 font-normal text-base opacity-100 z-50 pointer-events-auto select-text"
                                             />
                                         ) : (
                                             <span

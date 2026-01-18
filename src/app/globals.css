@@ -16,6 +16,6 @@ body {
   padding: 0;
   overscroll-behavior: none;
   /* Prevent iOS elastic bounce */
-  touch-action: none;
-  /* unexpected pinch/zoom */
+  touch-action: manipulation;
+  /* allow scrolling but prevent double-tap zoom */
 }

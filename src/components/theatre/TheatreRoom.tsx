@@ -44,7 +44,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
         peers, queue, currentVideoUrl, isPlaying, syncTime, requestState
     } = useTheatre(effectiveRoomId, username, getVideoTime);
 
-    const [skin, setSkin] = useState<'traditional' | 'modern' | 'space'>('space');
+    const [skin, setSkin] = useState<'traditional' | 'modern' | 'cosmic'>('cosmic');
     const [viewMode, setViewMode] = useState<'default' | 'fullscreen' | 'cinema'>('default');
     const [showChat, setShowChat] = useState(true);
     const [showQueue, setShowQueue] = useState(true);
@@ -70,7 +70,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
     const getThemeFont = () => {
         switch (skin) {
             case 'traditional': return 'font-serif tracking-widest'; // Playfair via layout
-            case 'space': return 'font-mono tracking-widest'; // Orbitron via layout (using mono variable usually or just font-family if mapped)
+            case 'cosmic': return 'font-mono tracking-widest'; // Orbitron via layout (using mono variable usually or just font-family if mapped)
             default: return 'font-sans tracking-wide'; // Inter
         }
     };
@@ -82,7 +82,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
         <div className={`w-full h-screen relative bg-black text-white overflow-hidden transition-all duration-500 
             ${skin === 'traditional' ? 'font-[family-name:var(--font-playfair)]' : ''}
             ${skin === 'modern' ? 'font-[family-name:var(--font-inter)]' : ''}
-            ${skin === 'space' ? 'font-[family-name:var(--font-orbitron)]' : ''}
+            ${skin === 'cosmic' ? 'font-[family-name:var(--font-orbitron)]' : ''}
         `}>
             {/* View Mode: Fullscreen */}
             <AnimatePresence>
@@ -117,15 +117,15 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                         <header className={`h-16 lg:h-24 flex-none flex items-center justify-between px-4 lg:px-8 z-[80] transition-all duration-500
                             ${skin === 'traditional' ? 'bg-gradient-to-b from-[#2a0505] to-transparent border-b border-[#ffd700]/10' : ''}
                             ${skin === 'modern' ? 'bg-gradient-to-b from-black/90 via-black/50 to-transparent' : ''}
-                            ${skin === 'space' ? 'bg-gradient-to-b from-cyan-950/30 to-transparent' : ''}
+                            ${skin === 'cosmic' ? 'bg-gradient-to-b from-zinc-950/30 to-transparent' : ''}
                         `}>
                             {/* Left: Branding & Status */}
                             <div className="flex items-center gap-6">
                                 <div className="flex flex-col">
                                     <h1 className={`font-black uppercase text-white flex items-center gap-2 transition-all
                                         ${skin === 'traditional' ? 'text-lg italic tracking-[0.1em] text-[#ffd700] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : ''}
-                                        ${skin === 'modern' ? 'text-sm tracking-[0.3em] text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]' : ''}
-                                        ${skin === 'space' ? 'text-xl tracking-[0.2em] text-cyan-200 drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]' : ''}
+                                        ${skin === 'modern' ? 'text-sm tracking-[0.3em] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : ''}
+                                        ${skin === 'cosmic' ? 'text-xl tracking-[0.2em] text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]' : ''}
                                     `}>
                                         <span>XIERRA</span>
                                         <span className="opacity-50 font-light">|</span>
@@ -138,7 +138,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                         </span>
                                         <button
                                             onClick={() => requestState()}
-                                            className="ml-2 text-[9px] uppercase tracking-widest text-cyan-500 opacity-60 hover:opacity-100 hover:underline"
+                                            className="ml-2 text-[9px] uppercase tracking-widest text-zinc-400 opacity-60 hover:opacity-100 hover:text-white hover:underline"
                                             title="Force re-sync with peers"
                                         >
                                             RESYNC
@@ -151,7 +151,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                             <div className={`flex items-center gap-4 backdrop-blur-md rounded-2xl p-1.5 border shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-500
                                 ${skin === 'traditional' ? 'bg-[#2a0505]/80 border-[#ffd700]/30 shadow-[#ffd700]/5' : ''}
                                 ${skin === 'modern' ? 'bg-black/40 border-white/10' : ''}
-                                ${skin === 'space' ? 'bg-cyan-950/20 border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.1)]' : ''}
+                                ${skin === 'cosmic' ? 'bg-zinc-950/20 border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : ''}
                             `}>
                                 {/* Theme Selector Dropdown */}
                                 <div className="relative z-50">
@@ -160,8 +160,8 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                         onBlur={() => setTimeout(() => setIsSkinMenuOpen(false), 200)}
                                         className={`flex items-center gap-2 text-xs uppercase tracking-wider font-medium py-2 px-3 rounded-lg transition-all border border-transparent
                                             ${skin === 'traditional' ? 'hover:bg-[#ffd700]/10 text-[#ffd700]' : ''}
-                                            ${skin === 'modern' ? 'hover:bg-white/10 text-cyan-400' : ''}
-                                            ${skin === 'space' ? 'hover:bg-cyan-500/10 text-cyan-200' : ''}
+                                            ${skin === 'modern' ? 'hover:bg-white/10 text-white' : ''}
+                                            ${skin === 'cosmic' ? 'hover:bg-white/10 text-zinc-200' : ''}
                                         `}
                                     >
                                         <Settings size={14} className={isSkinMenuOpen ? 'animate-spin-slow' : ''} />
@@ -177,10 +177,10 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                                 className={`absolute top-full right-0 mt-2 w-40 py-2 rounded-xl border backdrop-blur-xl shadow-xl overflow-hidden flex flex-col
                                                     ${skin === 'traditional' ? 'bg-[#2a0505]/95 border-[#ffd700]/30' : ''}
                                                     ${skin === 'modern' ? 'bg-zinc-900/95 border-white/10' : ''}
-                                                    ${skin === 'space' ? 'bg-slate-900/95 border-cyan-500/30' : ''}
+                                                    ${skin === 'cosmic' ? 'bg-black/95 border-white/10' : ''}
                                                 `}
                                             >
-                                                {['traditional', 'modern', 'space'].map((s) => (
+                                                {['traditional', 'modern', 'cosmic'].map((s) => (
                                                     <button
                                                         key={s}
                                                         onClick={() => {
@@ -191,7 +191,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                                             ${skin === s ? 'font-bold' : 'font-medium opacity-60 hover:opacity-100'}
                                                             ${skin === 'traditional' ? 'text-[#ffd700] hover:bg-[#ffd700]/10' : ''}
                                                             ${skin === 'modern' ? 'text-white hover:bg-white/10' : ''}
-                                                            ${skin === 'space' ? 'text-cyan-200 hover:bg-cyan-500/20' : ''}
+                                                            ${skin === 'cosmic' ? 'text-white hover:bg-white/10' : ''}
                                                         `}
                                                     >
                                                         <div className={`w-2 h-2 rounded-full ${skin === s ? 'opacity-100' : 'opacity-0'} 
@@ -213,10 +213,10 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                     title="Copy Invite Link"
                                 >
                                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity
-                                        ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-green-500/20'}
+                                        ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-white/10'}
                                     `} />
                                     {copied ? (
-                                        <Check size={16} className="text-green-500 relative z-10" />
+                                        <Check size={16} className="text-white relative z-10" />
                                     ) : (
                                         <LinkIcon size={16} className={`relative z-10 ${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
                                     )}
@@ -231,7 +231,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                         title="Toggle Queue"
                                     >
                                         <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${showQueue ? 'opacity-100' : ''}
-                                            ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-purple-500/20'}
+                                            ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-white/5'}
                                         `} />
                                         <Monitor size={16} className={`relative z-10 ${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
                                     </button>
@@ -242,7 +242,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                         title="Toggle Chat"
                                     >
                                         <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${showChat ? 'opacity-100' : ''}
-                                             ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-cyan-500/20'}
+                                             ${skin === 'traditional' ? 'bg-[#ffd700]/10' : 'bg-white/5'}
                                         `} />
                                         <MessageSquareOff size={16} className={`relative z-10 ${skin === 'traditional' ? 'text-[#ffd700]' : ''}`} />
                                     </button>
@@ -297,7 +297,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                             {/* Center Stage: Video */}
                             <motion.div layout className="flex-none lg:flex-1 w-full relative group min-h-[300px] lg:min-h-0 order-1 lg:order-2">
                                 {/* Glow Effect */}
-                                <div className="absolute -inset-1 bg-gradient-to-br from-cyan-500/20 to-purple-600/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-100 transition duration-700" />
+                                <div className="absolute -inset-1 bg-gradient-to-br from-white/10 to-zinc-500/10 rounded-2xl blur-xl opacity-50 group-hover:opacity-100 transition duration-700" />
 
                                 <div className="relative w-full h-full aspect-video lg:aspect-auto bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 ring-1 ring-white/5">
                                     <VideoPlayer

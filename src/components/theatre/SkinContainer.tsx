@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import Starfield from '../Starfield';
 import { motion } from 'framer-motion';
 
-type SkinVariant = 'traditional' | 'modern' | 'space';
+type SkinVariant = 'traditional' | 'modern' | 'cosmic';
 
 interface SkinContainerProps {
     variant: SkinVariant;
@@ -15,7 +15,7 @@ export default function SkinContainer({ variant, children }: SkinContainerProps)
     return (
         <div className="relative w-full h-screen overflow-hidden bg-black transition-colors duration-1000">
             {/* Background Layers */}
-            {variant === 'space' && (
+            {variant === 'cosmic' && (
                 <div className="absolute inset-0 z-0">
                     <Starfield />
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-900/5 to-black border-none" />

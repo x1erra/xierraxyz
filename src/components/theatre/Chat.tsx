@@ -33,8 +33,8 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
         <div className="flex flex-col h-full bg-zinc-900/95 backdrop-blur-2xl border-l border-white/10 w-full h-full shadow-2xl font-sans">
             {/* Header */}
             <div className="flex-none p-5 border-b border-white/5 bg-gradient-to-l from-black/40 to-transparent flex items-center justify-between">
-                <div className="flex items-center gap-2.5 text-cyan-400">
-                    <div className="p-2 bg-cyan-500/10 rounded-lg">
+                <div className="flex items-center gap-2.5 text-white">
+                    <div className="p-2 bg-white/10 rounded-lg">
                         <MessageSquare size={18} />
                     </div>
                     <div>
@@ -71,7 +71,7 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
                             >
                                 {!isContinuation && (
                                     <div className="flex items-center gap-2 mb-1.5 opacity-70 px-1">
-                                        <span className={`text-[10px] font-bold tracking-wider uppercase ${isMe ? 'text-cyan-400' : 'text-purple-400'}`}>
+                                        <span className={`text-[10px] font-bold tracking-wider uppercase ${isMe ? 'text-white' : 'text-zinc-400'}`}>
                                             {isMe ? 'You' : msg.sender}
                                         </span>
                                         <span className="text-[9px] text-zinc-600 font-mono">
@@ -81,7 +81,7 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
                                 )}
 
                                 <div className={`relative px-4 py-2.5 text-sm max-w-[90%] break-words shadow-lg backdrop-blur-md border ${isMe
-                                    ? 'bg-gradient-to-br from-cyan-600/20 to-blue-600/20 text-cyan-50 border-cyan-500/20 rounded-2xl rounded-tr-none shadow-[0_4px_15px_-5px_rgba(8,145,178,0.2)]'
+                                    ? 'bg-white/10 text-white border-white/20 rounded-2xl rounded-tr-none shadow-[0_4px_15px_-5px_rgba(255,255,255,0.1)]'
                                     : 'bg-zinc-800/60 text-zinc-200 border-white/5 rounded-2xl rounded-tl-none shadow-[0_4px_15px_-5px_rgba(0,0,0,0.3)]'
                                     }`}>
                                     {msg.text}
@@ -94,13 +94,13 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
 
             {/* Input Area */}
             <div className="flex-none p-5 border-t border-white/10 bg-black/60 backdrop-blur-xl">
-                <div className={`relative flex items-center gap-2 bg-zinc-900/80 border rounded-2xl p-2 transition-all duration-300 ${isFocused ? 'border-cyan-500/50 shadow-[0_0_20px_-5px_rgba(6,182,212,0.15)]' : 'border-white/10 hover:border-white/20'}`}>
-                    <button className="p-2 text-zinc-500 hover:text-cyan-400 transition-colors rounded-xl hover:bg-white/5">
+                <div className={`relative flex items-center gap-2 bg-zinc-900/80 border rounded-full p-1.5 transition-all duration-300 ${isFocused ? 'border-white/40 shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)]' : 'border-white/10 hover:border-white/20'}`}>
+                    <button className="p-2 text-zinc-500 hover:text-white transition-colors rounded-full hover:bg-white/5 ml-1">
                         <Smile size={18} />
                     </button>
 
                     <input
-                        className="flex-1 bg-transparent text-white text-base focus:outline-none placeholder-zinc-600 font-medium h-full py-2"
+                        className="flex-1 bg-transparent text-white text-base focus:outline-none placeholder-zinc-600 font-medium h-full py-2 px-2"
                         placeholder="Type a message..."
                         value={text}
                         onChange={(e) => setText(e.target.value)}
@@ -111,8 +111,8 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
 
                     <button
                         onClick={handleSend}
-                        className={`p-2 rounded-xl transition-all duration-300 ${text.trim()
-                            ? 'bg-cyan-500 text-black transform hover:scale-105 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+                        className={`p-2 rounded-full transition-all duration-300 ${text.trim()
+                            ? 'bg-white text-black transform hover:scale-105 shadow-[0_0_15px_rgba(255,255,255,0.4)]'
                             : 'bg-white/5 text-zinc-600 hover:bg-white/10'
                             }`}
                     >

@@ -14,11 +14,18 @@ interface TheatreRoomProps {
     password?: string;
 }
 
+import { useRouter } from 'next/navigation';
+
 export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
+    const router = useRouter();
     const [username] = useState(() => `User${Math.floor(Math.random() * 1000)}`);
     const effectiveRoomId = password ? `${roomId}-${password}` : roomId;
     const [isMobile, setIsMobile] = useState(false);
     const [copied, setCopied] = useState(false);
+
+    // Room Renaming State
+    const [isEditingRoom, setIsEditingRoom] = useState(false);
+    const [newRoomName, setNewRoomName] = useState(roomId);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -31,6 +38,15 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
         navigator.clipboard.writeText(window.location.href);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleRenameRoom = () => {
+        if (newRoomName.trim() && newRoomName !== roomId) {
+            router.push(`/theatre/${encodeURIComponent(newRoomName.trim())}`);
+        } else {
+            setIsEditingRoom(false);
+            setNewRoomName(roomId);
+        }
     };
 
     const videoPlayerRef = useRef<VideoPlayerHandle>(null);
@@ -122,14 +138,41 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                             {/* Left: Branding & Status */}
                             <div className="flex items-center gap-6">
                                 <div className="flex flex-col">
-                                    <h1 className={`font-black uppercase text-white flex items-center gap-2 transition-all
+                                    <h1 className={`font-black uppercase text-white flex items-center gap-2 transition-all group
                                         ${skin === 'traditional' ? 'text-lg italic tracking-[0.1em] text-[#ffd700] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : ''}
                                         ${skin === 'modern' ? 'text-sm tracking-[0.3em] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : ''}
                                         ${skin === 'cosmic' ? 'text-xl tracking-[0.2em] text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]' : ''}
                                     `}>
                                         <span>XIERRA</span>
                                         <span className="opacity-50 font-light">|</span>
-                                        <span className="opacity-80 font-normal">{roomId}</span>
+                                        {isEditingRoom ? (
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                value={newRoomName}
+                                                onChange={(e) => setNewRoomName(e.target.value)}
+                                                onBlur={handleRenameRoom}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleRenameRoom();
+                                                    if (e.key === 'Escape') {
+                                                        setIsEditingRoom(false);
+                                                        setNewRoomName(roomId);
+                                                    }
+                                                }}
+                                                className="bg-transparent border-b border-white/50 focus:border-white outline-none w-32 font-normal opacity-100 z-50 pointer-events-auto"
+                                            />
+                                        ) : (
+                                            <span
+                                                onClick={() => {
+                                                    setNewRoomName(roomId);
+                                                    setIsEditingRoom(true);
+                                                }}
+                                                className="opacity-80 font-normal cursor-pointer hover:opacity-100 hover:underline decoration-white/30 truncate max-w-[150px] lg:max-w-xs"
+                                                title="Click to rename room"
+                                            >
+                                                {roomId}
+                                            </span>
+                                        )}
                                     </h1>
                                     <div className="flex items-center gap-2 mt-1">
                                         <div className={`h-1.5 w-1.5 rounded-full ${peers.length > 0 ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]" : "bg-zinc-600"}`} />
@@ -288,6 +331,7 @@ export default function TheatreRoom({ roomId, password }: TheatreRoomProps) {
                                                 onAdd={(url) => sendSync({ type: 'QUEUE_ADD', url })}
                                                 onRemove={(index) => sendSync({ type: 'QUEUE_REMOVE', index })}
                                                 onPlayNext={() => sendSync({ type: 'QUEUE_PLAY_NEXT' })}
+                                                onClear={() => sendSync({ type: 'QUEUE_CLEAR' })}
                                             />
                                         </div>
                                     </motion.div>

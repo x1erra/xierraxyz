@@ -24,6 +24,7 @@ export type SyncAction =
     | { type: 'QUEUE_REMOVE'; index: number }
     | { type: 'QUEUE_PLAY_NEXT' }
     | { type: 'SKIN_CHANGE'; skin: string }
+    | { type: 'QUEUE_CLEAR' }
     | { type: 'REQUEST_STATE' }
     | {
         type: 'SYNC_STATE';
@@ -205,6 +206,10 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                 break;
             case 'SKIN_CHANGE':
                 // Handled by consumer via onSyncEvent
+                break;
+            case 'QUEUE_CLEAR':
+                console.log('[Theatre] Clearing queue');
+                setQueue([]);
                 break;
             case 'REQUEST_STATE':
                 console.log('[Theatre] Received REQUEST_STATE');

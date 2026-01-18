@@ -94,7 +94,7 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
 
             {/* Input Area */}
             <div className="flex-none p-5 border-t border-white/10 bg-black/60 backdrop-blur-xl">
-                <div className={`relative flex items-center gap-2 bg-zinc-900/80 border rounded-full p-1.5 transition-all duration-300 ${isFocused ? 'border-white/40 shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)]' : 'border-white/10 hover:border-white/20'}`}>
+                <div className={`relative flex items-center gap-2 bg-zinc-900/80 border rounded-full p-1.5 pr-2 transition-all duration-300 ${isFocused ? 'border-white/40 shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)]' : 'border-white/10 hover:border-white/20'}`}>
                     <button className="p-2 text-zinc-500 hover:text-white transition-colors rounded-full hover:bg-white/5 ml-1">
                         <Smile size={18} />
                     </button>
@@ -116,7 +116,7 @@ export default function Chat({ messages, onSend, username }: ChatProps) {
                             : 'bg-white/5 text-zinc-600 hover:bg-white/10'
                             }`}
                     >
-                        <Send size={16} fill={text.trim() ? "currentColor" : "none"} />
+                        <Send size={16} fill={text.trim() ? "currentColor" : "none"} className={text.trim() ? "ml-0.5" : ""} />
                     </button>
                 </div>
             </div>

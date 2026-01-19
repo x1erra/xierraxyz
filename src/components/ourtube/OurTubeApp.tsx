@@ -298,7 +298,7 @@ export default function OurTubeApp() {
                                 </div>
 
                                 <div className="flex items-center gap-2 md:gap-4 md:opacity-0 md:group-hover:opacity-100 transition-all ml-4">
-                                    <a href={`https://api.xierra.xyz/files/${encodeURIComponent(file.filename)}`} download className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition">
+                                    <a href={`https://api.xierra.xyz/files/${encodeURIComponent(file.filename)}`} download target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition">
                                         <Download size={16} />
                                     </a>
                                     <button onClick={() => handleDelete(file.filename)} className="p-2 hover:bg-red-500/10 rounded-lg text-zinc-400 hover:text-red-500 transition">

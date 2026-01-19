@@ -41,6 +41,13 @@ export default function OurTubeApp() {
                 api.getDownloads().then(setCompletedDownloads).catch(console.error);
             } else if (type === "error") {
                 console.error("Download error:", error);
+                setActiveDownloads((prev: any) => {
+                    const next = { ...prev };
+                    if (downloadId) delete next[downloadId];
+                    // If no specific ID, we might want to clear based on URL or clear all if fatal
+                    // But usually we have an ID or URL in the error event
+                    return next;
+                });
                 alert(`Download failed: ${error || 'Unknown error'}`);
             } else if (type === "connected") {
                 setConnected(true);

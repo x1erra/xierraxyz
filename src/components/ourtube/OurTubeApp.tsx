@@ -8,15 +8,42 @@ import { PullToRefresh } from '../PullToRefresh';
 
 import Starfield from '@/components/Starfield';
 
-const InfoTooltip = ({ text }: { text: string }) => (
-    <div className="group relative inline-flex items-center ml-2" onClick={(e) => e.preventDefault()}>
-        <Info size={14} className="text-zinc-500 hover:text-white transition cursor-help" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-lg text-xs text-zinc-300 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50 text-center leading-relaxed">
-            {text}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-900/95"></div>
+const InfoTooltip = ({ text }: { text: string }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="group relative inline-flex items-center ml-2">
+            <button
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation(); // Prevent label click
+                    setIsOpen(!isOpen);
+                }}
+                className="focus:outline-none"
+            >
+                <Info size={14} className={`transition cursor-help ${isOpen ? 'text-white' : 'text-zinc-500 hover:text-white'}`} />
+            </button>
+
+            {/* Tooltip Content */}
+            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-lg text-xs text-zinc-300 shadow-xl transition-all duration-200 z-50 text-center leading-relaxed ${isOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
+                {text}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-900/95"></div>
+            </div>
+
+            {/* Backdrop for mobile to close on outside tap */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-transparent"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsOpen(false);
+                    }}
+                />
+            )}
         </div>
-    </div>
-);
+    );
+};
 
 export default function OurTubeApp() {
     const [url, setUrl] = useState("");
@@ -26,6 +53,8 @@ export default function OurTubeApp() {
     const [format, setFormat] = useState("any");
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [connected, setConnected] = useState(false);
+    const [strictMode, setStrictMode] = useState(false);
+    const [splitChapters, setSplitChapters] = useState(false);
     const myIds = useRef<Set<string>>(new Set());
 
     useEffect(() => {
@@ -88,19 +117,6 @@ export default function OurTubeApp() {
                     });
 
                     // Add to Local Library (Private)
-                    // We need to fetch the file details or reconstruct them. 
-                    // Since we don't have the full size/etc in the finished event usually, 
-                    // we might want to ask the server for just this file, or valid it.
-                    // But for now, we'll try to use what we have or do a quick check.
-                    // Actually, let's just make a HEAD request or rely on the final progress data?
-                    // Simpler: Just Fetch the library update BUT only keep the one we just made?
-                    // No, that defeats the purpose.
-                    // Let's assume the last progress event had the filename.
-
-                    // Better approach: We can ask the server for metadata of this specific file if needed.
-                    // But for privacy, let's just create the entry from the event data if possible.
-                    // The event usually contains filename.
-
                     const filename = event.filename || (nestedData && nestedData.filename);
                     const fileSize = event.file_size || (nestedData && nestedData.file_size) || 0;
 
@@ -143,7 +159,7 @@ export default function OurTubeApp() {
             localStorage.setItem("ourtube_my_ids", JSON.stringify(Array.from(myIds.current)));
 
             // 2. Send request with this ID
-            const response = await api.startDownload(url, format, quality, taskId);
+            const response = await api.startDownload(url, format, quality, taskId, strictMode, splitChapters);
 
             // 3. Fallback: If server returned a different ID for some reason (shouldn't happen with updated backend), track that too
             if (response && response.id && response.id !== taskId) {
@@ -319,15 +335,25 @@ export default function OurTubeApp() {
                                 </div>
                                 <div className="space-y-4">
                                     <div className="col-span-1 md:col-span-2 flex flex-col gap-3 pt-2">
-                                        <label className="flex items-center gap-3 text-sm text-zinc-400 cursor-pointer hover:text-white transition group">
-                                            <div className="w-4 h-4 border border-white/10 rounded group-hover:border-white/50"></div>
+                                        <label
+                                            className="flex items-center gap-3 text-sm text-zinc-400 cursor-pointer hover:text-white transition group select-none"
+                                            onClick={() => setStrictMode(!strictMode)}
+                                        >
+                                            <div className={`w-4 h-4 border rounded flex items-center justify-center transition-all ${strictMode ? 'bg-white border-white text-black' : 'border-white/10 group-hover:border-white/50'}`}>
+                                                {strictMode && <div className="w-2 h-2 bg-black rounded-[1px]" />}
+                                            </div>
                                             <div className="flex items-center">
                                                 Strict Playlist Mode
                                                 <InfoTooltip text="Strict mode stops the downloader from recursively finding videos in a playlist. It will only download the videos explicitly linked." />
                                             </div>
                                         </label>
-                                        <label className="flex items-center gap-3 text-sm text-zinc-400 cursor-pointer hover:text-white transition group">
-                                            <div className="w-4 h-4 border border-white/10 rounded group-hover:border-white/50"></div>
+                                        <label
+                                            className="flex items-center gap-3 text-sm text-zinc-400 cursor-pointer hover:text-white transition group select-none"
+                                            onClick={() => setSplitChapters(!splitChapters)}
+                                        >
+                                            <div className={`w-4 h-4 border rounded flex items-center justify-center transition-all ${splitChapters ? 'bg-white border-white text-black' : 'border-white/10 group-hover:border-white/50'}`}>
+                                                {splitChapters && <div className="w-2 h-2 bg-black rounded-[1px]" />}
+                                            </div>
                                             <div className="flex items-center">
                                                 Split by chapters
                                                 <InfoTooltip text="Splits the video into multiple files based on the chapters defined in the video." />

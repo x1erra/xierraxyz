@@ -19,21 +19,30 @@ export default function OurTubeApp() {
         api.getDownloads().then(setCompletedDownloads).catch(console.error);
 
         // Connect to WebSocket
-        const ws = api.connectWebSocket((data) => {
-            if (data.type === "progress") {
+        const ws = api.connectWebSocket((event) => {
+            const { type, id, data: nestedData, error } = event;
+            const downloadId = id || (nestedData && nestedData.id);
+
+            if (type === "progress" && downloadId) {
                 setActiveDownloads((prev: any) => ({
                     ...prev,
-                    [data.id || data.data.id]: { ...(prev[data.id || data.data.id] || {}), ...data.data },
+                    [downloadId]: {
+                        ...(prev[downloadId] || {}),
+                        ...event,
+                        ...(nestedData || {})
+                    },
                 }));
-            } else if (data.type === "finished") {
+            } else if (type === "finished" && downloadId) {
                 setActiveDownloads((prev: any) => {
                     const next = { ...prev };
-                    delete next[data.id || data.data.id];
+                    delete next[downloadId];
                     return next;
                 });
-                // Refresh library
                 api.getDownloads().then(setCompletedDownloads).catch(console.error);
-            } else if (data.type === "connected") {
+            } else if (type === "error") {
+                console.error("Download error:", error);
+                alert(`Download failed: ${error || 'Unknown error'}`);
+            } else if (type === "connected") {
                 setConnected(true);
             }
         });

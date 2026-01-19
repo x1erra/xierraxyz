@@ -11,10 +11,6 @@ export const api = {
         return response.json();
     },
 
-    getDownloads: async () => {
-        const response = await fetch(`${API_BASE_URL}/downloads`);
-        return response.json();
-    },
 
     deleteDownload: async (filename: string) => {
         const response = await fetch(`${API_BASE_URL}/downloads/${encodeURIComponent(filename)}`, {

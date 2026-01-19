@@ -23,8 +23,17 @@ export const api = {
         return response.json();
     },
 
-    connectWebSocket: (onMessage: (data: any) => void) => {
+    connectWebSocket: (onMessage: (data: any) => void, onOpen?: () => void, onClose?: () => void) => {
         const ws = new WebSocket(WS_BASE_URL);
+
+        ws.onopen = () => {
+            if (onOpen) onOpen();
+        };
+
+        ws.onclose = () => {
+            if (onClose) onClose();
+        };
+
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);

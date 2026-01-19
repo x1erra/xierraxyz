@@ -15,44 +15,76 @@ export default function OurTubeApp() {
     const [connected, setConnected] = useState(false);
 
     useEffect(() => {
-        // Initial fetch of downloads
-        api.getDownloads().then(setCompletedDownloads).catch(console.error);
+        // Load library from local storage
+        const savedLibrary = localStorage.getItem("ourtube_library");
+        if (savedLibrary) {
+            try {
+                setCompletedDownloads(JSON.parse(savedLibrary));
+            } catch (e) {
+                console.error("Failed to parse local library");
+            }
+        }
 
         // Connect to WebSocket
-        const ws = api.connectWebSocket((event) => {
-            const { type, id, data: nestedData, error } = event;
-            const downloadId = id || (nestedData && nestedData.id);
+        const ws = api.connectWebSocket(
+            (event) => {
+                const { type, id, data: nestedData, error } = event;
+                const downloadId = id || (nestedData && nestedData.id);
 
-            if (type === "progress" && downloadId) {
-                setActiveDownloads((prev: any) => ({
-                    ...prev,
-                    [downloadId]: {
-                        ...(prev[downloadId] || {}),
-                        ...event,
-                        ...(nestedData || {})
-                    },
-                }));
-            } else if (type === "finished" && downloadId) {
-                setActiveDownloads((prev: any) => {
-                    const next = { ...prev };
-                    delete next[downloadId];
-                    return next;
-                });
-                api.getDownloads().then(setCompletedDownloads).catch(console.error);
-            } else if (type === "error") {
-                console.error("Download error:", error);
-                setActiveDownloads((prev: any) => {
-                    const next = { ...prev };
-                    if (downloadId) delete next[downloadId];
-                    // If no specific ID, we might want to clear based on URL or clear all if fatal
-                    // But usually we have an ID or URL in the error event
-                    return next;
-                });
-                alert(`Download failed: ${error || 'Unknown error'}`);
-            } else if (type === "connected") {
-                setConnected(true);
-            }
-        });
+                if (type === "progress" && downloadId) {
+                    setActiveDownloads((prev: any) => ({
+                        ...prev,
+                        [downloadId]: {
+                            ...(prev[downloadId] || {}),
+                            ...event,
+                            ...(nestedData || {})
+                        },
+                    }));
+                } else if (type === "finished" && downloadId) {
+                    // Update Active State
+                    setActiveDownloads((prev: any) => {
+                        const next = { ...prev };
+                        delete next[downloadId];
+                        return next;
+                    });
+
+                    // Add to Local Library (Private)
+                    // We need to fetch the file details or reconstruct them. 
+                    // Since we don't have the full size/etc in the finished event usually, 
+                    // we might want to ask the server for just this file, or valid it.
+                    // But for now, we'll try to use what we have or do a quick check.
+                    // Actually, let's just make a HEAD request or rely on the final progress data?
+                    // Simpler: Just Fetch the library update BUT only keep the one we just made?
+                    // No, that defeats the purpose.
+                    // Let's assume the last progress event had the filename.
+
+                    // Better approach: We can ask the server for metadata of this specific file if needed.
+                    // But for privacy, let's just create the entry from the event data if possible.
+                    // The event usually contains filename.
+
+                    const filename = event.filename || (nestedData && nestedData.filename);
+                    if (filename) {
+                        setCompletedDownloads((prev) => {
+                            const newEntry = { filename, size: 0, date: Date.now() }; // Size 0 for now as we don't have it easily without a fetch.
+                            const unique = [newEntry, ...prev.filter(p => p.filename !== filename)];
+                            localStorage.setItem("ourtube_library", JSON.stringify(unique));
+                            return unique;
+                        });
+                    }
+
+                } else if (type === "error") {
+                    console.error("Download error:", error);
+                    setActiveDownloads((prev: any) => {
+                        const next = { ...prev };
+                        if (downloadId) delete next[downloadId];
+                        return next;
+                    });
+                    alert(`Download failed: ${error || 'Unknown error'}`);
+                }
+            },
+            () => setConnected(true), // OnOpen
+            () => setConnected(false) // OnClose
+        );
 
         return () => ws.close();
     }, []);
@@ -71,7 +103,11 @@ export default function OurTubeApp() {
     const handleDelete = async (filename: string) => {
         try {
             await api.deleteDownload(filename);
-            setCompletedDownloads((prev) => prev.filter((d) => d.filename !== filename));
+            setCompletedDownloads((prev) => {
+                const updated = prev.filter((d) => d.filename !== filename);
+                localStorage.setItem("ourtube_library", JSON.stringify(updated));
+                return updated;
+            });
         } catch (e) {
             console.error(e);
         }

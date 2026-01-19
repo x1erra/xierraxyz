@@ -78,7 +78,7 @@ export default function OurTubeApp() {
     };
 
     return (
-        <div className="min-h-screen relative font-sans text-white selection:bg-white selection:text-black pb-20 overflow-x-hidden">
+        <div className="min-h-[100dvh] relative font-sans text-white selection:bg-white selection:text-black pb-20 overflow-x-hidden">
             <Starfield />
 
             {/* Header */}

@@ -2,8 +2,19 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from './api';
-import { Download, Trash2, Settings2 } from 'lucide-react';
+import { Download, Trash2, Settings2, Clipboard, Info } from 'lucide-react';
+
 import Starfield from '@/components/Starfield';
+
+const InfoTooltip = ({ text }: { text: string }) => (
+    <div className="group relative inline-flex items-center ml-2" onClick={(e) => e.preventDefault()}>
+        <Info size={14} className="text-zinc-500 hover:text-white transition cursor-help" />
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-lg text-xs text-zinc-300 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50 text-center leading-relaxed">
+            {text}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-900/95"></div>
+        </div>
+    </div>
+);
 
 export default function OurTubeApp() {
     const [url, setUrl] = useState("");
@@ -161,8 +172,29 @@ export default function OurTubeApp() {
         }
     };
 
+    const handleClearAll = () => {
+        if (confirm("Are you sure you want to clear your download library? This will delete all history from this device.")) {
+            setCompletedDownloads([]);
+            localStorage.removeItem("ourtube_library");
+        }
+    };
+
+    const handlePaste = async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text) setUrl(text);
+        } catch (err) {
+            console.error('Failed to read clipboard contents: ', err);
+            // Fallback for non-secure contexts or denied permissions if needed, 
+            // but usually just doing nothing or focusing input is enough.
+            // For now, let's just focus the input if we can't paste directly?
+            // Actually, manual paste is the fallback.
+            alert("Could not access clipboard. Please paste manually.");
+        }
+    };
+
     return (
-        <div className="min-h-[100dvh] relative font-sans text-white selection:bg-white selection:text-black pb-20 overflow-x-hidden">
+        <div className="flex flex-col min-h-[100dvh] relative font-sans text-white selection:bg-white selection:text-black overflow-x-hidden">
             <Starfield />
 
             {/* Header */}
@@ -191,17 +223,26 @@ export default function OurTubeApp() {
                 </div>
             </header>
 
-            <main className="max-w-3xl mx-auto p-4 md:p-8 space-y-12 bg-black/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/5 relative z-10 mt-8">
+            <main className="flex-1 w-full max-w-3xl mx-auto p-4 md:p-8 space-y-12 bg-black/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/5 relative z-10 mt-8 mb-8">
                 {/* Input Section */}
                 <div className="space-y-6">
                     <div className="flex flex-col md:flex-row gap-3">
-                        <input
-                            type="text"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            placeholder="Paste link..."
-                            className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-white/40 transition placeholder-zinc-600 shadow-inner"
-                        />
+                        <div className="relative flex-1 group">
+                            <input
+                                type="text"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
+                                placeholder="Paste link..."
+                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pr-12 text-sm text-white focus:outline-none focus:border-white/40 transition placeholder-zinc-600 shadow-inner"
+                            />
+                            <button
+                                onClick={handlePaste}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-zinc-500 hover:text-white transition rounded-md hover:bg-white/10"
+                                title="Paste from clipboard"
+                            >
+                                <Clipboard size={16} />
+                            </button>
+                        </div>
                         <button
                             onClick={handleDownload}
                             className="bg-transparent border border-white/30 hover:bg-white/10 hover:border-white text-white px-5 py-3 rounded-lg font-bold tracking-widest transition shadow-[0_0_15px_rgba(255,255,255,0.05)] uppercase text-[10px]"
@@ -276,11 +317,17 @@ export default function OurTubeApp() {
                                 <div className="col-span-1 md:col-span-2 flex flex-col gap-3 pt-2">
                                     <label className="flex items-center gap-3 text-sm text-zinc-400 cursor-pointer hover:text-white transition group">
                                         <div className="w-4 h-4 border border-white/10 rounded group-hover:border-white/50"></div>
-                                        Strict Playlist Mode
+                                        <div className="flex items-center">
+                                            Strict Playlist Mode
+                                            <InfoTooltip text="Strict mode stops the downloader from recursively finding videos in a playlist. It will only download the videos explicitly linked." />
+                                        </div>
                                     </label>
                                     <label className="flex items-center gap-3 text-sm text-zinc-400 cursor-pointer hover:text-white transition group">
                                         <div className="w-4 h-4 border border-white/10 rounded group-hover:border-white/50"></div>
-                                        Split by chapters
+                                        <div className="flex items-center">
+                                            Split by chapters
+                                            <InfoTooltip text="Splits the video into multiple files based on the chapters defined in the video." />
+                                        </div>
                                     </label>
                                 </div>
                             </div>
@@ -322,7 +369,7 @@ export default function OurTubeApp() {
                 <div className="space-y-4 pt-4">
                     <div className="flex justify-between items-end border-b border-white/10 pb-2">
                         <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">Library</h2>
-                        <button className="text-[10px] uppercase tracking-wider text-zinc-500 hover:text-white transition">Clear All</button>
+                        <button onClick={handleClearAll} className="text-[10px] uppercase tracking-wider text-zinc-500 hover:text-white transition">Clear All</button>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3">

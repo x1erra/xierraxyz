@@ -98,8 +98,12 @@ def download_file(filename: str):
             filename=safe_filename,
             media_type='application/octet-stream'
         )
-        
-    raise HTTPException(status_code=404, detail="File not found")
+    
+    # Debug information for 404
+    files_in_dir = os.listdir(downloads_dir)
+    debug_msg = f"File not found. Looked for: '{target_path}'. Available files: {files_in_dir}"
+    print(debug_msg) # Log to console
+    raise HTTPException(status_code=404, detail=debug_msg)
 
 @app.delete("/api/downloads/{filename}")
 def delete_download(filename: str):

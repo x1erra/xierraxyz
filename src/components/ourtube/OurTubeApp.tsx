@@ -412,7 +412,6 @@ export default function OurTubeApp() {
                     </div>
                 </main>
             </div>
-        </div>
-        </PullToRefresh >
+        </PullToRefresh>
     );
 }

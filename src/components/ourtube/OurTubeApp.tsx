@@ -63,9 +63,11 @@ export default function OurTubeApp() {
                     // The event usually contains filename.
 
                     const filename = event.filename || (nestedData && nestedData.filename);
+                    const fileSize = event.file_size || (nestedData && nestedData.file_size) || 0;
+
                     if (filename) {
                         setCompletedDownloads((prev) => {
-                            const newEntry = { filename, size: 0, date: Date.now() }; // Size 0 for now as we don't have it easily without a fetch.
+                            const newEntry = { filename, size: fileSize, date: Date.now() };
                             const unique = [newEntry, ...prev.filter(p => p.filename !== filename)];
                             localStorage.setItem("ourtube_library", JSON.stringify(unique));
                             return unique;

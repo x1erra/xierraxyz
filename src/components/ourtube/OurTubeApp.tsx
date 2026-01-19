@@ -119,16 +119,32 @@ export default function OurTubeApp() {
 
     const handleDownload = async () => {
         if (!url) return;
+
+        // Generate ID locally to ensure we catch all events (privacy filter needs to know about it BEFORE we send request)
+        // Simple UUID v4 generator
+        const taskId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+
         try {
-            const response = await api.startDownload(url, format, quality);
-            if (response && response.id) {
+            // 1. Register ID as "mine" IMMEDIATELY
+            myIds.current.add(taskId);
+            localStorage.setItem("ourtube_my_ids", JSON.stringify(Array.from(myIds.current)));
+
+            // 2. Send request with this ID
+            const response = await api.startDownload(url, format, quality, taskId);
+
+            // 3. Fallback: If server returned a different ID for some reason (shouldn't happen with updated backend), track that too
+            if (response && response.id && response.id !== taskId) {
                 myIds.current.add(response.id);
                 localStorage.setItem("ourtube_my_ids", JSON.stringify(Array.from(myIds.current)));
             }
+
             setUrl("");
         } catch (e) {
             console.error(e);
             alert("Failed to start download");
+            // Cleanup on explicit failure (optional, but keeps list clean)
+            // myIds.current.delete(taskId);
+            // localStorage.setItem("ourtube_my_ids", JSON.stringify(Array.from(myIds.current)));
         }
     };
 

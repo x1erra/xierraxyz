@@ -10,6 +10,9 @@ export const api = {
         });
         return response.json();
     },
+    getDownloadUrl: (filename: string) => {
+        return `${API_BASE_URL.replace('/api', '')}/api/download/${encodeURIComponent(filename)}`;
+    },
 
 
     deleteDownload: async (filename: string) => {

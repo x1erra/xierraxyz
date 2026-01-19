@@ -415,9 +415,7 @@ export default function OurTubeApp() {
                                         <div className="w-2 h-2 rounded-full bg-white/20 group-hover:bg-green-400 shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all"></div>
                                         <div className="flex flex-col min-w-0">
                                             <a
-                                                href={`https://api.xierra.xyz/files/${encodeURIComponent(file.filename)}`}
-                                                target="_blank"
-                                                rel="noreferrer"
+                                                href={api.getDownloadUrl(file.filename)}
                                                 className="text-sm text-zinc-200 hover:text-white truncate font-medium transition"
                                             >
                                                 {file.filename}
@@ -427,7 +425,7 @@ export default function OurTubeApp() {
                                     </div>
 
                                     <div className="flex items-center gap-2 md:gap-4 md:opacity-0 md:group-hover:opacity-100 transition-all ml-4">
-                                        <a href={`https://api.xierra.xyz/files/${encodeURIComponent(file.filename)}`} download target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition">
+                                        <a href={api.getDownloadUrl(file.filename)} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition">
                                             <Download size={16} />
                                         </a>
                                         <button onClick={() => handleDelete(file.filename)} className="p-2 hover:bg-red-500/10 rounded-lg text-zinc-400 hover:text-red-500 transition">

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef } from 'react';
 
-export default function Starfield() {
+export default function Starfield({ className = "absolute inset-0 z-0 pointer-events-none" }: { className?: string }) {
+
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
@@ -189,7 +190,7 @@ export default function Starfield() {
     return (
         <canvas
             ref={canvasRef}
-            className="absolute inset-0 z-0 pointer-events-none"
+            className={className}
             style={{ background: 'black' }}
         />
     );

@@ -195,7 +195,8 @@ export default function OurTubeApp() {
 
     return (
         <div className="flex flex-col min-h-[100dvh] relative font-sans text-white selection:bg-white selection:text-black overflow-x-hidden">
-            <Starfield />
+            <Starfield className="fixed inset-0 z-0 pointer-events-none" />
+
 
             {/* Header */}
             <header className="sticky top-0 z-50 backdrop-blur-md bg-black/50 border-b border-white/10">

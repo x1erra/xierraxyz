@@ -335,10 +335,13 @@ export default function OurTubeApp() {
                                 </div>
                                 <div className="space-y-4">
                                     <div className="col-span-1 md:col-span-2 flex flex-col gap-3 pt-2">
-                                        <label
-                                            className="flex items-center gap-3 text-sm text-zinc-400 cursor-pointer hover:text-white transition group select-none"
-                                            onClick={() => setStrictMode(!strictMode)}
-                                        >
+                                        <label className="flex items-center gap-3 text-sm text-zinc-400 cursor-pointer hover:text-white transition group select-none">
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                checked={strictMode}
+                                                onChange={(e) => setStrictMode(e.target.checked)}
+                                            />
                                             <div className={`w-4 h-4 border rounded flex items-center justify-center transition-all ${strictMode ? 'bg-white border-white text-black' : 'border-white/10 group-hover:border-white/50'}`}>
                                                 {strictMode && <div className="w-2 h-2 bg-black rounded-[1px]" />}
                                             </div>
@@ -347,10 +350,13 @@ export default function OurTubeApp() {
                                                 <InfoTooltip text="Strict mode stops the downloader from recursively finding videos in a playlist. It will only download the videos explicitly linked." />
                                             </div>
                                         </label>
-                                        <label
-                                            className="flex items-center gap-3 text-sm text-zinc-400 cursor-pointer hover:text-white transition group select-none"
-                                            onClick={() => setSplitChapters(!splitChapters)}
-                                        >
+                                        <label className="flex items-center gap-3 text-sm text-zinc-400 cursor-pointer hover:text-white transition group select-none">
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                checked={splitChapters}
+                                                onChange={(e) => setSplitChapters(e.target.checked)}
+                                            />
                                             <div className={`w-4 h-4 border rounded flex items-center justify-center transition-all ${splitChapters ? 'bg-white border-white text-black' : 'border-white/10 group-hover:border-white/50'}`}>
                                                 {splitChapters && <div className="w-2 h-2 bg-black rounded-[1px]" />}
                                             </div>

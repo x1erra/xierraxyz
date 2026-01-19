@@ -23,16 +23,16 @@ export default function OurTubeApp() {
             if (data.type === "progress") {
                 setActiveDownloads((prev: any) => ({
                     ...prev,
-                    [data.data.id]: { ...prev[data.data.id], ...data.data },
+                    [data.id || data.data.id]: { ...(prev[data.id || data.data.id] || {}), ...data.data },
                 }));
             } else if (data.type === "finished") {
                 setActiveDownloads((prev: any) => {
                     const next = { ...prev };
-                    delete next[data.data.id];
+                    delete next[data.id || data.data.id];
                     return next;
                 });
                 // Refresh library
-                api.getDownloads().then(setCompletedDownloads);
+                api.getDownloads().then(setCompletedDownloads).catch(console.error);
             } else if (data.type === "connected") {
                 setConnected(true);
             }
@@ -75,9 +75,9 @@ export default function OurTubeApp() {
                             <span className="text-xl font-mono tracking-widest text-zinc-300">OURTUBE</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                            <div className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+                            <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-500' : 'bg-orange-500'} animate-pulse`}></span>
                             <span className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
-                                {connected ? 'System Ready' : 'Connecting To Pi...'}
+                                {connected ? 'System Ready' : 'Connecting to Pi...'}
                             </span>
                         </div>
                     </div>
@@ -226,13 +226,13 @@ export default function OurTubeApp() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-3">
-                        {completedDownloads.map((file) => (
+                        {completedDownloads.map((file: any) => (
                             <div key={file.filename} className="bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/20 p-4 rounded-xl flex items-center justify-between transition group">
                                 <div className="flex items-center gap-4 overflow-hidden">
                                     <div className="w-2 h-2 rounded-full bg-white/20 group-hover:bg-green-400 shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all"></div>
                                     <div className="flex flex-col min-w-0">
                                         <a
-                                            href={`https://api.xierra.xyz/downloads/${encodeURIComponent(file.filename)}`}
+                                            href={`https://api.xierra.xyz/files/${encodeURIComponent(file.filename)}`}
                                             target="_blank"
                                             rel="noreferrer"
                                             className="text-sm text-zinc-200 hover:text-white truncate font-medium transition"
@@ -244,7 +244,7 @@ export default function OurTubeApp() {
                                 </div>
 
                                 <div className="flex items-center gap-2 md:gap-4 md:opacity-0 md:group-hover:opacity-100 transition-all ml-4">
-                                    <a href={`https://api.xierra.xyz/downloads/${encodeURIComponent(file.filename)}`} download className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition">
+                                    <a href={`https://api.xierra.xyz/files/${encodeURIComponent(file.filename)}`} download className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition">
                                         <Download size={16} />
                                     </a>
                                     <button onClick={() => handleDelete(file.filename)} className="p-2 hover:bg-red-500/10 rounded-lg text-zinc-400 hover:text-red-500 transition">

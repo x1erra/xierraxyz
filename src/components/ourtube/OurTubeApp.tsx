@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from './api';
 import { Download, Trash2, Settings2 } from 'lucide-react';
 import Starfield from '@/components/Starfield';
@@ -13,6 +13,7 @@ export default function OurTubeApp() {
     const [format, setFormat] = useState("any");
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [connected, setConnected] = useState(false);
+    const myIds = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         // Load library from local storage
@@ -25,6 +26,19 @@ export default function OurTubeApp() {
             }
         }
 
+        // Load myIds from local storage
+        const savedIds = localStorage.getItem("ourtube_my_ids");
+        if (savedIds) {
+            try {
+                const parsed = JSON.parse(savedIds);
+                if (Array.isArray(parsed)) {
+                    parsed.forEach(id => myIds.current.add(id));
+                }
+            } catch (e) {
+                console.error("Failed to parse my_ids");
+            }
+        }
+
         // Connect to WebSocket
         const ws = api.connectWebSocket(
             (event) => {
@@ -32,6 +46,8 @@ export default function OurTubeApp() {
                 const downloadId = id || (nestedData && nestedData.id);
 
                 if (type === "progress" && downloadId) {
+                    if (!myIds.current.has(downloadId)) return;
+
                     setActiveDownloads((prev: any) => ({
                         ...prev,
                         [downloadId]: {
@@ -41,6 +57,16 @@ export default function OurTubeApp() {
                         },
                     }));
                 } else if (type === "finished" && downloadId) {
+                    if (!myIds.current.has(downloadId)) {
+                        // Clean up active if it was there (shouldn't be, but good hygiene)
+                        setActiveDownloads((prev: any) => {
+                            const next = { ...prev };
+                            if (next[downloadId]) delete next[downloadId];
+                            return next;
+                        });
+                        return;
+                    }
+
                     // Update Active State
                     setActiveDownloads((prev: any) => {
                         const next = { ...prev };
@@ -94,7 +120,11 @@ export default function OurTubeApp() {
     const handleDownload = async () => {
         if (!url) return;
         try {
-            await api.startDownload(url, format, quality);
+            const response = await api.startDownload(url, format, quality);
+            if (response && response.id) {
+                myIds.current.add(response.id);
+                localStorage.setItem("ourtube_my_ids", JSON.stringify(Array.from(myIds.current)));
+            }
             setUrl("");
         } catch (e) {
             console.error(e);

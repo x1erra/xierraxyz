@@ -10,8 +10,8 @@ export const api = {
         });
         return response.json();
     },
-    getDownloadUrl: (filename: string) => {
-        return `https://api.xierra.xyz/api/v2/download/${encodeURIComponent(filename)}`;
+    getDownloadUrl(filename: string) {
+        return `${API_BASE_URL}/v3/download?filename=${encodeURIComponent(filename)}`;
     },
 
 

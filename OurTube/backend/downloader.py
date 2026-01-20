@@ -10,15 +10,15 @@ from socket_manager import manager
 import uuid
 
 def sanitize_filename(name):
-    # 1. Remove truly illegal characters
-    sanitized = re.sub(r'[\\/*?:"<>|]', '', name)
-    # 2. Replace multiple dots or spaces with a single one
+    # 1. Remove all non-alphanumeric except spaces, dashes, underscores, and dots
+    sanitized = re.sub(r'[^a-zA-Z0-9\s\-\_\.]', '', name)
+    # 2. Collapse multiple dots or spaces
     sanitized = re.sub(r'\.+', '.', sanitized)
     sanitized = re.sub(r'\s+', ' ', sanitized)
     # 3. Strip leading/trailing whitespace and dots
     sanitized = sanitized.strip(' .')
     # 4. Limit length
-    return sanitized[:150]
+    return sanitized[:120]
 
 class Downloader:
     def __init__(self):

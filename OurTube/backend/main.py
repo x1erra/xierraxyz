@@ -40,6 +40,16 @@ class DownloadRequest(BaseModel):
 def read_root():
     return {"status": "OurTube Backend Running"}
 
+@app.get("/api/v2/status")
+def get_debug_status():
+    """Hidden endpoint to list files for debugging."""
+    files = os.listdir("downloads")
+    return {
+        "status": "online",
+        "downloads_count": len(files),
+        "files": files
+    }
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
@@ -71,18 +81,28 @@ async def start_download(request: DownloadRequest):
 import re
 
 def sanitize_filename(name: str) -> str:
-    # 1. Remove truly illegal characters
-    sanitized = re.sub(r'[\\/*?:"<>|]', '', name)
-    # 2. Replace multiple dots or spaces with a single one
+    # 1. Remove all non-alphanumeric except spaces, dashes, underscores, and dots
+    # This is much safer for URLs and paths
+    sanitized = re.sub(r'[^a-zA-Z0-9\s\-\_\.]', '', name)
+    # 2. Collapse multiple dots or spaces
     sanitized = re.sub(r'\.+', '.', sanitized)
     sanitized = re.sub(r'\s+', ' ', sanitized)
     # 3. Strip leading/trailing whitespace and dots
     sanitized = sanitized.strip(' .')
-    # 4. Limit length to avoid URL issues (keeping it reasonably long but safe)
-    return sanitized[:150]
+    # 4. Limit length
+    return sanitized[:120]
 
 @app.get("/api/v2/download/{filename}")
-def download_file(filename: str):
+def download_file_v2(filename: str):
+    """Old path-based download. Keeping for fallback but deprecated."""
+    return process_download(filename)
+
+@app.get("/api/v3/download")
+def download_file_v3(filename: str):
+    """New query-based download for better compatibility with messy names."""
+    return process_download(filename)
+
+def process_download(filename: str):
     # Sanitize the input filename
     safe_filename = sanitize_filename(filename)
     
@@ -102,7 +122,8 @@ def download_file(filename: str):
             media_type='application/octet-stream'
         )
     
-    raise HTTPException(status_code=404, detail="File not found")
+    # If not found, show what literal name we looked for
+    raise HTTPException(status_code=404, detail=f"File not found: {safe_filename}")
 
 @app.delete("/api/downloads/{filename}")
 def delete_download(filename: str):

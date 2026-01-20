@@ -225,7 +225,6 @@ export default function OurTubeApp() {
                                 <span className="text-xl font-black tracking-widest">XIERRA</span>
                                 <span className="text-zinc-600 text-xl font-light">|</span>
                                 <span className="text-xl font-mono tracking-widest text-zinc-300">OURTUBE</span>
-                                <span className="ml-2 text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-zinc-400">v2.0</span>
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-500' : 'bg-orange-500'} animate-pulse`}></span>

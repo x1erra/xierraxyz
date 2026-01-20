@@ -11,7 +11,7 @@ export const api = {
         return response.json();
     },
     getDownloadUrl: (filename: string) => {
-        return `https://api.xierra.xyz/api/download/${encodeURIComponent(filename)}`;
+        return `https://api.xierra.xyz/api/v2/download/${encodeURIComponent(filename)}`;
     },
 
 

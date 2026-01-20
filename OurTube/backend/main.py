@@ -78,7 +78,7 @@ def sanitize_filename(name: str) -> str:
     sanitized = sanitized.replace('..', '')
     return sanitized
 
-@app.get("/api/download/{filename}")
+@app.get("/api/v2/download/{filename}")
 def download_file(filename: str):
     # Sanitize the input filename
     safe_filename = sanitize_filename(filename)

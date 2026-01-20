@@ -71,12 +71,15 @@ async def start_download(request: DownloadRequest):
 import re
 
 def sanitize_filename(name: str) -> str:
-    # Remove potentially dangerous characters and ensure it's not too long
-    # This removes \ / : * ? " < > | and any control characters
+    # 1. Remove truly illegal characters
     sanitized = re.sub(r'[\\/*?:"<>|]', '', name)
-    # Also prevent .. entirely just in case
-    sanitized = sanitized.replace('..', '')
-    return sanitized
+    # 2. Replace multiple dots or spaces with a single one
+    sanitized = re.sub(r'\.+', '.', sanitized)
+    sanitized = re.sub(r'\s+', ' ', sanitized)
+    # 3. Strip leading/trailing whitespace and dots
+    sanitized = sanitized.strip(' .')
+    # 4. Limit length to avoid URL issues (keeping it reasonably long but safe)
+    return sanitized[:150]
 
 @app.get("/api/v2/download/{filename}")
 def download_file(filename: str):
@@ -99,11 +102,7 @@ def download_file(filename: str):
             media_type='application/octet-stream'
         )
     
-    # Debug information for 404
-    files_in_dir = os.listdir(downloads_dir)
-    debug_msg = f"File not found. Looked for: '{target_path}'. Available files: {files_in_dir}"
-    print(debug_msg) # Log to console
-    raise HTTPException(status_code=404, detail=debug_msg)
+    raise HTTPException(status_code=404, detail="File not found")
 
 @app.delete("/api/downloads/{filename}")
 def delete_download(filename: str):

@@ -10,9 +10,15 @@ from socket_manager import manager
 import uuid
 
 def sanitize_filename(name):
-    # Remove potentially dangerous characters and ensure it's not too long
+    # 1. Remove truly illegal characters
     sanitized = re.sub(r'[\\/*?:"<>|]', '', name)
-    return sanitized[:200]
+    # 2. Replace multiple dots or spaces with a single one
+    sanitized = re.sub(r'\.+', '.', sanitized)
+    sanitized = re.sub(r'\s+', ' ', sanitized)
+    # 3. Strip leading/trailing whitespace and dots
+    sanitized = sanitized.strip(' .')
+    # 4. Limit length
+    return sanitized[:150]
 
 class Downloader:
     def __init__(self):
@@ -167,13 +173,18 @@ class Downloader:
                     raise Exception("Could not find downloaded file in processing directory")
 
                 # Move to final location with sanitized title
-                ext = actual_file.rsplit('.', 1)[-1]
+                # Ensure we don't have double dots or spaces between title and extension
+                ext = actual_file.rsplit('.', 1)[-1].strip().lower()
                 safe_title = sanitize_filename(title)
-                final_path = os.path.join("downloads", f"{safe_title}.{ext}")
+                
+                # Construct final filename: Title.ext
+                final_filename = f"{safe_title}.{ext}"
+                final_path = os.path.join("downloads", final_filename)
                 
                 # If file already exists, add timestamp to avoid collision
                 if os.path.exists(final_path):
-                    final_path = os.path.join("downloads", f"{safe_title}_{int(time.time())}.{ext}")
+                    final_filename = f"{safe_title}_{int(time.time())}.{ext}"
+                    final_path = os.path.join("downloads", final_filename)
 
                 shutil.move(actual_file, final_path)
                 

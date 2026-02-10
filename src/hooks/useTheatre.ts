@@ -1,18 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
-import { joinRoom } from 'trystero/torrent';
+import { joinRoom } from 'trystero/nostr';
 
-// Define the configuration for Trystero using BitTorrent (more robust for some NATs)
+// Define the configuration for Trystero using Nostr (Reverting to Nostr + OpenRelay)
 const config = {
     appId: 'xierra-theatre',
-    trackerUrls: [
-        'wss://tracker.webtorrent.io',
-        'wss://tracker.openwebtorrent.com',
-        'wss://tracker.btorrent.xyz',
-        'wss://tracker.files.fm:7073/announce',
-        'wss://tracker.webtorrent.dev'
+    relayUrls: [
+        'wss://relay.damus.io',
+        'wss://relay.snort.social',
+        'wss://nos.lol',
+        'wss://relay.primal.net',
+        'wss://relay.nostr.band',
+        'wss://relay.zbd.gg',
+        'wss://nostr.wine',
+        'wss://relay.plebstr.com',
+        'wss://relay.now',
+        'wss://relay.humanoid.life'
     ],
     rtcConfig: {
         iceServers: [
+            // Google STUN (Standard)
             {
                 urls: [
                     'stun:stun.l.google.com:19302',
@@ -22,8 +28,22 @@ const config = {
                     'stun:stun4.l.google.com:19302',
                 ]
             },
-            { urls: 'stun:stun.services.mozilla.com' },
-            { urls: 'stun:stun.qq.com:3478' }
+            // OpenRelay (Free Tier TURN) - Key for bypassing Carrier NAT
+            {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'stun:openrelay.metered.ca:80'
+            },
+            // Mozilla STUN backup
+            { urls: 'stun:stun.services.mozilla.com' }
         ]
     }
 };
@@ -97,11 +117,11 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
     useEffect(() => {
         if (!roomId) return;
 
-        // Initialize Trystero Room via BitTorrent
+        // Initialize Trystero Room (Nostr)
         let room: any;
         try {
             room = joinRoom(config, roomId);
-            console.log('Trystero (Torrent) room joined:', roomId);
+            console.log('Trystero (Nostr) room joined:', roomId);
         } catch (error) {
             console.error('Failed to join Trystero room:', error);
             return;

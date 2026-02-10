@@ -16,7 +16,23 @@ const config = {
     ],
     rtcConfig: {
         iceServers: [
+            // Google STUN (Standard)
             { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+            // OpenRelay (Free Tier) - Good for testing
+            {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'stun:openrelay.metered.ca:80'
+            },
+            // Tencent (China/Asia fallback)
             { urls: 'stun:stun.qq.com:3478' }
         ]
     }

@@ -95,7 +95,9 @@ class Downloader:
              format_selector = 'bestvideo+bestaudio/best'
              
              if quality == 'best':
-                 format_selector = 'bestvideo+bestaudio/best'
+                 # Force H.264 (avc1) and AAC (mp4a) for maximum compatibility (Linux/iOS/Windows)
+                 # Fallback to best mp4, then best available if strict codecs aren't found
+                 format_selector = 'bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/best[ext=mp4]/best'
              elif quality == 'best_ios':
                  format_selector = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
              elif quality == 'worst':

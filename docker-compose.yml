@@ -1,0 +1,36 @@
+services:
+  xierra-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: xierra-web
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+
+  ourtube-backend:
+    build:
+      context: ./OurTube/backend
+      dockerfile: Dockerfile
+    container_name: ourtube-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ourtube_downloads:/app/downloads
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: xierra-tunnel
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    depends_on:
+      - xierra-web
+      - ourtube-backend
+
+volumes:
+  ourtube_downloads:

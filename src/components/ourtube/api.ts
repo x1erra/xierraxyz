@@ -1,5 +1,5 @@
-const API_BASE_URL = 'https://api.xierra.xyz/api';
-const WS_BASE_URL = 'wss://api.xierra.xyz/ws';
+const API_BASE_URL = process.env.NEXT_PUBLIC_OURTUBE_API_URL || 'https://api.xierra.xyz/api';
+const WS_BASE_URL = process.env.NEXT_PUBLIC_OURTUBE_WS_URL || 'wss://api.xierra.xyz/ws';
 
 export const api = {
     startDownload: async (url: string, format = "any", quality = "best", taskId?: string, strictMode = false, splitChapters = false) => {

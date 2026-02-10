@@ -69,6 +69,12 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
         isPlayingRef.current = isPlaying;
     }, [isPlaying]);
 
+    // Keep getVideoTime fresh in a ref to avoid stale closures in listeners
+    const getVideoTimeRef = useRef(getVideoTime);
+    useEffect(() => {
+        getVideoTimeRef.current = getVideoTime;
+    }, [getVideoTime]);
+
     // Actions
     const sendMessageRef = useRef<(data: ChatMessage) => void>(null);
     const sendSyncRef = useRef<(data: SyncAction, peerId?: string) => void>(null);
@@ -117,7 +123,29 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
             room.onPeerJoin((peerId: any) => {
                 console.log(`Peer ${peerId} joined`);
                 setPeers(prev => [...prev, peerId]);
-                // We no longer push state immediately; we wait for REQUEST_STATE
+
+                // AUTO-SYNC: Immediately push state to the new peer if we are the host/have content
+                // This fixes the "Waiting for broadcast" issue if the Request isn't received
+                if (queueRef.current.length > 0 || isPlayingRef.current) {
+                    // Slight delay to ensure their listener is ready
+                    setTimeout(() => {
+                        console.log('[Theatre] Peer joined, auto-broadcasting state to', peerId);
+                        const currentTime = getVideoTimeRef.current ? getVideoTimeRef.current() : 0;
+                        const stateBlock = {
+                            queue: queueRef.current,
+                            currentVideoUrl: currentVideoUrlRef.current,
+                            isPlaying: isPlayingRef.current,
+                            timestamp: currentTime
+                        };
+
+                        if (sendSyncRef.current) {
+                            sendSyncRef.current({
+                                type: 'SYNC_STATE',
+                                state: stateBlock
+                            }); // Broadcast to all (simplest) to ensure consensus
+                        }
+                    }, 500);
+                }
             });
 
             room.onPeerLeave((peerId: any) => {
@@ -125,13 +153,11 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                 setPeers(prev => prev.filter(p => p !== peerId));
             });
 
-            // On join, request state from peers
-            // Wait a moment for connection to stabilize? Or send immediately.
-            // sendSyncAction is available here.
+            // On join, request state from peers (Keep this as backup Pull method)
             setTimeout(() => {
                 console.log('[Theatre] Requesting state from peers...');
                 sendSyncAction({ type: 'REQUEST_STATE' });
-            }, 1000); // Small delay to ensuring we are connected to relays
+            }, 1000);
         }
 
         return () => {
@@ -218,7 +244,7 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                 // though usually only one person has content initially. 
                 // Better: if we have *something*, share it.
                 if (queueRef.current.length > 0 || isPlayingRef.current) {
-                    const currentTime = getVideoTime ? getVideoTime() : 0;
+                    const currentTime = getVideoTimeRef.current ? getVideoTimeRef.current() : 0;
                     const stateBlock = {
                         queue: queueRef.current,
                         currentVideoUrl: currentVideoUrlRef.current,

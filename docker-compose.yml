@@ -14,7 +14,7 @@ services:
     build:
       context: ./OurTube/backend
       dockerfile: Dockerfile
-    container_name: ourtube-backend
+    container_name: xierra-ourtube-backend
     restart: unless-stopped
     ports:
       - "8000:8000"

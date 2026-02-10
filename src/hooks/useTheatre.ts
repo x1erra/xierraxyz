@@ -1,20 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { joinRoom } from 'trystero/nostr';
+import { joinRoom } from 'trystero/torrent';
 
-// Define the configuration for Trystero using Nostr (default, most reliable)
+// Define the configuration for Trystero using BitTorrent (more robust for some NATs)
 const config = {
     appId: 'xierra-theatre',
-    relayUrls: [
-        'wss://relay.damus.io',
-        'wss://relay.snort.social',
-        'wss://nos.lol',
-        'wss://relay.primal.net',
-        'wss://relay.nostr.band',
-        'wss://relay.zbd.gg',
-        'wss://nostr.wine',
-        'wss://relay.plebstr.com',
-        'wss://relay.now',
-        'wss://relay.humanoid.life'
+    trackerUrls: [
+        'wss://tracker.webtorrent.io',
+        'wss://tracker.openwebtorrent.com',
+        'wss://tracker.btorrent.xyz',
+        'wss://tracker.files.fm:7073/announce',
+        'wss://tracker.webtorrent.dev'
     ],
     rtcConfig: {
         iceServers: [
@@ -102,15 +97,13 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
     useEffect(() => {
         if (!roomId) return;
 
-        // Initialize Trystero Room
+        // Initialize Trystero Room via BitTorrent
         let room: any;
         try {
             room = joinRoom(config, roomId);
-            console.log('Trystero room joined:', roomId);
+            console.log('Trystero (Torrent) room joined:', roomId);
         } catch (error) {
             console.error('Failed to join Trystero room:', error);
-            // Fallback: create a dummy room object so the UI doesn't crash?
-            // For now, let's just log. If room is undefined, the next lines will throw.
             return;
         }
         setRoomState(room);
@@ -127,10 +120,7 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
             const [sendSyncAction, getSync] = room.makeAction('sync');
             sendSyncRef.current = sendSyncAction;
             getSync((action: any, peerId: any) => {
-                // Handle internal state updates
-                // console.log('Received sync action:', action); // Too spammy for seek?
                 handleSyncAction(action);
-                // Notify consumer
                 if (onSyncEventRef.current) {
                     onSyncEventRef.current(action);
                 }
@@ -142,9 +132,7 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                 setPeers(prev => [...prev, peerId]);
 
                 // AUTO-SYNC: Immediately push state to the new peer if we are the host/have content
-                // This fixes the "Waiting for broadcast" issue if the Request isn't received
                 if (queueRef.current.length > 0 || isPlayingRef.current) {
-                    // Slight delay to ensure their listener is ready
                     setTimeout(() => {
                         console.log('[Theatre] Peer joined, auto-broadcasting state to', peerId);
                         const currentTime = getVideoTimeRef.current ? getVideoTimeRef.current() : 0;
@@ -159,7 +147,7 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                             sendSyncRef.current({
                                 type: 'SYNC_STATE',
                                 state: stateBlock
-                            }); // Broadcast to all (simplest) to ensure consensus
+                            });
                         }
                     }, 500);
                 }
@@ -170,7 +158,7 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                 setPeers(prev => prev.filter(p => p !== peerId));
             });
 
-            // On join, request state from peers (Keep this as backup Pull method)
+            // On join, request state from peers
             setTimeout(() => {
                 console.log('[Theatre] Requesting state from peers...');
                 sendSyncAction({ type: 'REQUEST_STATE' });
@@ -183,7 +171,6 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
     }, [roomId]);
 
     const handleSyncAction = (action: SyncAction) => {
-        // console.log('[Theatre] handleSyncAction called with:', action.type);
         switch (action.type) {
             case 'PLAY':
                 console.log('[Theatre] Setting isPlaying to true');
@@ -198,8 +185,6 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                 break;
             case 'SYNC_STATE':
                 console.log('[Theatre] Received SYNC_STATE from peer');
-                // Only accept state if we are "behind" or joining? 
-                // For simplified logic, always accept logic that claims to be state.
                 setQueue(action.state.queue);
                 setCurrentVideoUrl(action.state.currentVideoUrl);
                 setIsPlaying(action.state.isPlaying);
@@ -207,14 +192,8 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                 break;
             case 'QUEUE_ADD':
                 console.log('[Theatre] QUEUE_ADD - adding URL:', action.url);
-                // Calculate new queue state first
                 setQueue(currentQueue => {
                     const newQueue = [...currentQueue, action.url];
-                    console.log('[Theatre] New queue:', newQueue);
-
-                    // Logic to auto-play if nothing is currently playing
-                    // We must check the *current* state of currentVideoUrl, not inside this callback ideally.
-                    // However, to ensure we catch the empty case:
                     setCurrentVideoUrl(currentUrl => {
                         if (!currentUrl) {
                             console.log('[Theatre] First video added, setting to PAUSED state');
@@ -223,7 +202,6 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                         }
                         return currentUrl;
                     });
-
                     return newQueue;
                 });
                 break;
@@ -234,8 +212,6 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                 console.log('[Theatre] QUEUE_PLAY_NEXT called');
                 setQueue(currentQueue => {
                     const [next, ...rest] = currentQueue;
-                    console.log('[Theatre] Playing next video:', next);
-
                     if (next) {
                         setCurrentVideoUrl(next);
                         setIsPlaying(true);
@@ -243,12 +219,10 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                         setCurrentVideoUrl(null);
                         setIsPlaying(false);
                     }
-
                     return rest;
                 });
                 break;
             case 'SKIN_CHANGE':
-                // Handled by consumer via onSyncEvent
                 break;
             case 'QUEUE_CLEAR':
                 console.log('[Theatre] Clearing queue');
@@ -256,10 +230,6 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                 break;
             case 'REQUEST_STATE':
                 console.log('[Theatre] Received REQUEST_STATE');
-                // Only send state if we are "hosting" content (playing or have queue)
-                // This prevents empty states from overwriting meaningful ones if race conditions occur,
-                // though usually only one person has content initially. 
-                // Better: if we have *something*, share it.
                 if (queueRef.current.length > 0 || isPlayingRef.current) {
                     const currentTime = getVideoTimeRef.current ? getVideoTimeRef.current() : 0;
                     const stateBlock = {
@@ -269,9 +239,6 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
                         timestamp: currentTime
                     };
                     console.log('[Theatre] Sending SYNC_STATE response:', stateBlock);
-                    // Broadcast to everyone (simplest) or could target sender if action had senderId
-                    // Since 'action' in Trystero doesn't include metadata in the payload unless we add it,
-                    // we'll broadcast. It acts as a "State Update" for everyone which is fine.
                     if (sendSyncRef.current) {
                         sendSyncRef.current({
                             type: 'SYNC_STATE',
@@ -296,12 +263,8 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
     };
 
     const sendSync = (action: SyncAction) => {
-        // console.log('[Theatre] sendSync called with action:', action.type);
-        // Always apply locally first (Optimistic UI) regarding of connection status
         handleSyncAction(action);
-
         if (sendSyncRef.current) {
-            // console.log('[Theatre] Broadcasting to peers');
             sendSyncRef.current(action);
         } else {
             console.warn('[Theatre] Trystero not connected, action applied locally only:', action.type);
@@ -324,7 +287,6 @@ export const useTheatre = (roomId: string, username: string, getVideoTime?: () =
         sendSync,
         setOnSyncEvent,
         requestState,
-        // State
         queue,
         currentVideoUrl,
         isPlaying,

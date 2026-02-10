@@ -12,27 +12,22 @@ const config = {
         'wss://relay.nostr.band',
         'wss://relay.zbd.gg',
         'wss://nostr.wine',
-        'wss://relay.plebstr.com'
+        'wss://relay.plebstr.com',
+        'wss://relay.now',
+        'wss://relay.humanoid.life'
     ],
     rtcConfig: {
         iceServers: [
-            // Google STUN (Standard)
-            { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
-            // OpenRelay (Free Tier) - Good for testing
             {
-                urls: 'turn:openrelay.metered.ca:80',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
+                urls: [
+                    'stun:stun.l.google.com:19302',
+                    'stun:stun1.l.google.com:19302',
+                    'stun:stun2.l.google.com:19302',
+                    'stun:stun3.l.google.com:19302',
+                    'stun:stun4.l.google.com:19302',
+                ]
             },
-            {
-                urls: 'turn:openrelay.metered.ca:443',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
-            },
-            {
-                urls: 'stun:openrelay.metered.ca:80'
-            },
-            // Tencent (China/Asia fallback)
+            { urls: 'stun:stun.services.mozilla.com' },
             { urls: 'stun:stun.qq.com:3478' }
         ]
     }

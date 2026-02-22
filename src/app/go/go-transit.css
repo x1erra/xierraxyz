@@ -8,6 +8,8 @@
   min-height: 100vh;
   font-size: 18px;
   overscroll-behavior-y: none;
+  /* Let our touch handlers own vertical gestures for pull-to-refresh */
+  touch-action: pan-x pinch-zoom;
 }
 
 .go-page * {
@@ -27,7 +29,7 @@
 
 @media (max-width: 768px) {
   .go-page .header {
-    padding-top: max(60px, env(safe-area-inset-top));
+    padding-top: max(16px, env(safe-area-inset-top));
   }
 }
 
@@ -257,6 +259,8 @@
   overflow: hidden;
   background: #000;
   color: #9fd30a;
+  height: 0; /* CSS default — inline style overrides when pulling */
+  min-height: 0;
 }
 
 .go-page .pull-icon {

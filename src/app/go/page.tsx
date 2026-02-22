@@ -184,7 +184,7 @@ export default function GOTransitPage() {
               </div>
               <div className="menu-section">Search</div>
               {!searchOpen ? (
-                <div onClick={openSearch} className="menu-search-trigger">
+                <div onClick={(e) => { e.stopPropagation(); openSearch(); }} className="menu-search-trigger">
                   Search stations...
                 </div>
               ) : (

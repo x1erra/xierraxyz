@@ -41,7 +41,7 @@ export default function GOTransitPage() {
   const pullingActive = useRef(false);
   const pullDistanceRef = useRef(0);
   const isRefreshingRef = useRef(false);
-  const fetchDeparturesRef = useRef(fetchDepartures);
+  const fetchDeparturesRef = useRef<() => Promise<void>>(async () => {});
 
   const PULL_THRESHOLD = 60;
   const MAX_PULL = 80;

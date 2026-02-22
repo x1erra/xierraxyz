@@ -8,6 +8,6 @@ export function middleware(request: NextRequest) {
     "";
 
   if (host.includes("go.xierra.xyz") && !request.nextUrl.pathname.startsWith("/GO")) {
-    return NextResponse.redirect(new URL("/GO", request.url));
+    return NextResponse.redirect(new URL("/go", request.url));
   }
 }

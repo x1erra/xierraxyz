@@ -1,0 +1,237 @@
+@import url('https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&display=swap');
+
+.go-page {
+  background-color: #000;
+  font-family: 'Overpass', 'Overpass Fallback', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-style: normal;
+  color: #fff;
+  min-height: 100vh;
+  font-size: 18px;
+}
+
+.go-page * {
+  box-sizing: border-box;
+}
+
+/* Header */
+.go-page .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: #000;
+  position: relative;
+}
+
+.go-page .station-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.go-page .go-logo {
+  cursor: pointer;
+  position: relative;
+}
+
+.go-page .go-logo img {
+  width: 42px;
+  height: auto;
+}
+
+.go-page .station-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 10px;
+  background: #1e1c1c;
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 100;
+  min-width: 220px;
+}
+
+.go-page .station-menu.show {
+  display: block;
+}
+
+.go-page .station-menu div {
+  padding: 14px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.go-page .station-menu div:hover {
+  background: #2a2a2a;
+}
+
+.go-page .station-menu .menu-section {
+  background: #111;
+  color: #dbdbdb;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 10px 20px 6px;
+  cursor: default;
+}
+
+.go-page .station-menu .menu-section:hover {
+  background: #111;
+}
+
+.go-page .transport-badge {
+  font-size: 20px;
+}
+
+.go-page .station-info h1 {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.go-page .current-time {
+  font-size: 26px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Table Header */
+.go-page .table-header {
+  display: grid;
+  grid-template-columns: 50px 50px 1fr 90px;
+  gap: 14px;
+  padding: 14px 24px;
+  background: #1e1c1c;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: #dbdbdb;
+}
+
+.go-page .table-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.go-page .table-header > div:nth-child(1) {
+  align-items: center;
+}
+
+.go-page .table-header > div:nth-child(2) {
+  align-items: center;
+}
+
+.go-page .table-header > div:nth-child(3) {
+  padding-left: 4px;
+}
+
+.go-page .table-header > div:last-child {
+  align-items: flex-end;
+  padding-right: 4px;
+}
+
+/* Departures */
+.go-page .departures {
+  border-top: 1px solid #1e1c1c;
+}
+
+.go-page .departure-row {
+  display: grid;
+  grid-template-columns: 50px 50px 1fr 90px;
+  gap: 14px;
+  padding: 18px 24px;
+  border-bottom: 3px dotted #dbdbdb;
+  align-items: center;
+}
+
+.go-page .platform {
+  font-weight: 700;
+  font-size: 20px;
+  color: #9fd30a;
+  text-align: center;
+}
+
+.go-page .route-badge {
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 6px 12px;
+  border-radius: 5px;
+  text-align: center;
+  display: inline-block;
+}
+
+/* Train line colors */
+.go-page .route-badge.BR { background: #3b82f6; }
+.go-page .route-badge.KI { background: #22c55e; }
+.go-page .route-badge.LE { background: #ef4444; }
+.go-page .route-badge.LW { background: #a8193d; }
+.go-page .route-badge.MI { background: #f97316; }
+.go-page .route-badge.RH { background: #06b6d4; }
+.go-page .route-badge.ST { background: #92400e; }
+
+/* Bus route colors */
+.go-page .route-badge.\31 2 { background: #8b5cf6; }
+.go-page .route-badge.\31 5 { background: #ec4899; }
+.go-page .route-badge.\31 6 { background: #14b8a6; }
+.go-page .route-badge.\31 7 { background: #f59e0b; }
+.go-page .route-badge.\31 8 { background: #6366f1; }
+.go-page .route-badge.\31 9 { background: #10b981; }
+.go-page .route-badge.\32 0 { background: #f43f5e; }
+.go-page .route-badge.\32 1 { background: #0ea5e9; }
+.go-page .route-badge.\32 2 { background: #a855f7; }
+.go-page .route-badge.\32 3 { background: #84cc16; }
+.go-page .route-badge.\32 4 { background: #eab308; }
+.go-page .route-badge.\32 5 { background: #22d3ee; }
+.go-page .route-badge.\32 6 { background: #f472b6; }
+.go-page .route-badge.\32 7 { background: #4ade80; }
+.go-page .route-badge.\32 8 { background: #fb923c; }
+.go-page .route-badge.\32 9 { background: #c084fc; }
+.go-page .route-badge.\33 0 { background: #67e8f9; }
+.go-page .route-badge.\31  { background: #818cf8; }
+
+.go-page .route-badge.default { background: #6b7280; }
+
+.go-page .direction {
+  font-weight: 600;
+  font-size: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.go-page .times-container {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.go-page .time-chip {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 22px;
+  color: #d9d499;
+}
+
+.go-page .time-chip.second {
+  opacity: 0.6;
+}
+
+.go-page .time-chip.due {
+  color: #9fd30a;
+  animation: go-blink 1s ease-in-out infinite;
+}
+
+@keyframes go-blink {
+  50% { opacity: 0.3; }
+}
+
+.go-page .loading {
+  text-align: center;
+  padding: 50px 16px;
+  font-size: 18px;
+  color: #dbdbdb;
+}

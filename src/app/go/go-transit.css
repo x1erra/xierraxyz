@@ -19,6 +19,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
+  padding-top: max(20px, env(safe-area-inset-top));
   background: #000;
   position: relative;
 }

@@ -36,48 +36,82 @@ export default function GOTransitPage() {
   const [isPulling, setIsPulling] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef(0);
   const pullingActive = useRef(false);
+  const pullDistanceRef = useRef(0);
+  const isRefreshingRef = useRef(false);
+  const fetchDeparturesRef = useRef(fetchDepartures);
 
   const PULL_THRESHOLD = 60;
   const MAX_PULL = 80;
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY === 0 && !isRefreshing) {
-      touchStartY.current = e.touches[0].clientY;
-      pullingActive.current = true;
-    }
-  };
+  // Keep fetchDeparturesRef current so touch handlers always call the latest version
+  useEffect(() => {
+    fetchDeparturesRef.current = fetchDepartures;
+  });
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!pullingActive.current || isRefreshing) return;
-    const delta = e.touches[0].clientY - touchStartY.current;
-    if (delta > 0) {
-      setIsPulling(true);
-      setPullDistance(Math.min(delta * 0.5, MAX_PULL));
-    } else {
+  useEffect(() => {
+    const el = pageRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (window.scrollY <= 0 && !isRefreshingRef.current) {
+        touchStartY.current = e.touches[0].clientY;
+        pullingActive.current = true;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!pullingActive.current || isRefreshingRef.current) return;
+      const delta = e.touches[0].clientY - touchStartY.current;
+      if (delta > 0) {
+        e.preventDefault(); // block iOS overscroll so it doesn't swallow the gesture
+        const dist = Math.min(delta * 0.5, MAX_PULL);
+        pullDistanceRef.current = dist;
+        setPullDistance(dist);
+        setIsPulling(true);
+      } else {
+        pullingActive.current = false;
+        pullDistanceRef.current = 0;
+        setPullDistance(0);
+        setIsPulling(false);
+      }
+    };
+
+    const onTouchEnd = async () => {
+      if (!pullingActive.current) return;
       pullingActive.current = false;
       setIsPulling(false);
-      setPullDistance(0);
-    }
-  };
-
-  const handleTouchEnd = async () => {
-    if (!pullingActive.current) return;
-    pullingActive.current = false;
-    setIsPulling(false);
-    if (pullDistance >= PULL_THRESHOLD) {
-      setIsRefreshing(true);
-      setPullDistance(50);
-      await fetchDepartures();
-      setTimeout(() => {
-        setIsRefreshing(false);
+      const dist = pullDistanceRef.current;
+      if (dist >= PULL_THRESHOLD) {
+        isRefreshingRef.current = true;
+        setIsRefreshing(true);
+        pullDistanceRef.current = 50;
+        setPullDistance(50);
+        await fetchDeparturesRef.current();
+        setTimeout(() => {
+          isRefreshingRef.current = false;
+          setIsRefreshing(false);
+          pullDistanceRef.current = 0;
+          setPullDistance(0);
+        }, 400);
+      } else {
+        pullDistanceRef.current = 0;
         setPullDistance(0);
-      }, 400);
-    } else {
-      setPullDistance(0);
-    }
-  };
+      }
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd);
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
 
   useEffect(() => {
     updateTime();
@@ -204,9 +238,7 @@ export default function GOTransitPage() {
   return (
     <div
       className="go-page"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      ref={pageRef}
     >
       <div
         className="pull-indicator"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { Train, Bus } from "lucide-react";
 import "./go-transit.css";
 import { STATIONS } from "./stations";
 
@@ -220,7 +221,9 @@ export default function GOTransitPage() {
             </div>
           </div>
           <h1 id="stationName">{stationName}</h1>
-          <span className="transport-badge">{transportType === "trains" ? "🚂" : "🚌"}</span>
+          <span className="transport-badge">
+            {transportType === "trains" ? <Train size={22} strokeWidth={2} /> : <Bus size={22} strokeWidth={2} />}
+          </span>
         </div>
         <div className="current-time" id="currentTime">
           {currentTime}

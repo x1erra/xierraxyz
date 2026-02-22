@@ -24,6 +24,12 @@
   position: relative;
 }
 
+@media (max-width: 768px) {
+  .go-page .header {
+    padding-top: max(60px, env(safe-area-inset-top));
+  }
+}
+
 .go-page .station-info {
   display: flex;
   align-items: center;

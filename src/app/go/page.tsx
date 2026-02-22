@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Train, Bus } from "lucide-react";
+import { Train, Bus, RefreshCw } from "lucide-react";
 import "./go-transit.css";
 import { STATIONS } from "./stations";
 
@@ -32,7 +32,52 @@ export default function GOTransitPage() {
   const [transportType, setTransportType] = useState<TransportType>("trains");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const touchStartY = useRef(0);
+  const pullingActive = useRef(false);
+
+  const PULL_THRESHOLD = 60;
+  const MAX_PULL = 80;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY === 0 && !isRefreshing) {
+      touchStartY.current = e.touches[0].clientY;
+      pullingActive.current = true;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!pullingActive.current || isRefreshing) return;
+    const delta = e.touches[0].clientY - touchStartY.current;
+    if (delta > 0) {
+      setIsPulling(true);
+      setPullDistance(Math.min(delta * 0.5, MAX_PULL));
+    } else {
+      pullingActive.current = false;
+      setIsPulling(false);
+      setPullDistance(0);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (!pullingActive.current) return;
+    pullingActive.current = false;
+    setIsPulling(false);
+    if (pullDistance >= PULL_THRESHOLD) {
+      setIsRefreshing(true);
+      setPullDistance(50);
+      await fetchDepartures();
+      setTimeout(() => {
+        setIsRefreshing(false);
+        setPullDistance(0);
+      }, 400);
+    } else {
+      setPullDistance(0);
+    }
+  };
 
   useEffect(() => {
     updateTime();
@@ -157,7 +202,24 @@ export default function GOTransitPage() {
   const displayedGroups = transportType === "trains" ? trainGroups : busGroups;
 
   return (
-    <div className="go-page">
+    <div
+      className="go-page"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div
+        className="pull-indicator"
+        style={{
+          height: `${pullDistance}px`,
+          transition: isPulling ? "none" : "height 0.3s ease",
+        }}
+      >
+        <RefreshCw
+          size={22}
+          className={`pull-icon ${isRefreshing ? "spinning" : pullDistance >= PULL_THRESHOLD ? "ready" : ""}`}
+        />
+      </div>
       <div className="header">
         <div className="station-info">
           <div className="go-logo" onClick={toggleMenu}>

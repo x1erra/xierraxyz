@@ -248,6 +248,34 @@
   color: #dbdbdb;
 }
 
+/* Pull to refresh */
+.go-page .pull-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #000;
+  color: #9fd30a;
+}
+
+.go-page .pull-icon {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.go-page .pull-icon.ready {
+  transform: rotate(180deg);
+}
+
+.go-page .pull-icon.spinning {
+  animation: pull-spin 0.7s linear infinite;
+}
+
+@keyframes pull-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Search */
 .go-page .menu-search-trigger {
   padding: 14px 20px;

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./go-transit.css";
+import { STATIONS } from "./stations";
 
 interface Departure {
   platform: string;
@@ -28,6 +29,9 @@ export default function GOTransitPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [transportType, setTransportType] = useState<TransportType>("trains");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     updateTime();
@@ -127,7 +131,25 @@ export default function GOTransitPage() {
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
+    if (menuOpen) {
+      setSearchOpen(false);
+      setSearchQuery("");
+    }
   };
+
+  const openSearch = () => {
+    setSearchOpen(true);
+    setTimeout(() => searchRef.current?.focus(), 50);
+  };
+
+  const filteredStations = searchQuery.trim()
+    ? STATIONS.filter(
+        (s) =>
+          s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.line.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
 
   const trainGroups = departureGroups.filter((g) => g.type === "T");
   const busGroups = departureGroups.filter((g) => g.type === "B");
@@ -160,6 +182,41 @@ export default function GOTransitPage() {
               <div onClick={() => selectStation("UN", "Union Station", "buses")}>
                 Union Station
               </div>
+              <div className="menu-section">Search</div>
+              {!searchOpen ? (
+                <div onClick={openSearch} className="menu-search-trigger">
+                  🔍 Search stations...
+                </div>
+              ) : (
+                <div className="menu-search-area">
+                  <input
+                    ref={searchRef}
+                    type="text"
+                    className="menu-search-input"
+                    placeholder="Station, line, or code..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  {filteredStations.length > 0 && (
+                    <div className="menu-search-results">
+                      {filteredStations.map((station) => (
+                        <div
+                          key={station.code}
+                          className="menu-search-result"
+                          onClick={() => selectStation(station.code, station.name, "trains")}
+                        >
+                          <span className="result-name">{station.name}</span>
+                          <span className="result-meta">{station.line} · {station.code}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {searchQuery.trim() && filteredStations.length === 0 && (
+                    <div className="menu-search-empty">No stations found</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <h1 id="stationName">{stationName}</h1>

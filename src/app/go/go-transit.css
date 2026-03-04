@@ -5,7 +5,8 @@
   font-family: 'Overpass', 'Overpass Fallback', -apple-system, BlinkMacSystemFont, sans-serif;
   font-style: normal;
   color: #fff;
-  min-height: 100vh;
+  min-height: 100dvh;
+  /* Better handling for mobile browser UI (Safari bottom bar) */
   font-size: 18px;
   overscroll-behavior-y: none;
   /* Let our touch handlers own vertical gestures for pull-to-refresh */
@@ -29,7 +30,8 @@
 
 @media (max-width: 768px) {
   .go-page .header {
-    padding-top: max(16px, env(safe-area-inset-top));
+    /* iOS Safari Tab Groups or PWA Standalone bar adds an uncounted ~44px overlay over the top. Add extra clearance. */
+    padding-top: calc(max(16px, env(safe-area-inset-top)) + 44px);
   }
 }
 
@@ -124,25 +126,25 @@
   color: #dbdbdb;
 }
 
-.go-page .table-header > div {
+.go-page .table-header>div {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.go-page .table-header > div:nth-child(1) {
+.go-page .table-header>div:nth-child(1) {
   align-items: center;
 }
 
-.go-page .table-header > div:nth-child(2) {
+.go-page .table-header>div:nth-child(2) {
   align-items: center;
 }
 
-.go-page .table-header > div:nth-child(3) {
+.go-page .table-header>div:nth-child(3) {
   padding-left: 4px;
 }
 
-.go-page .table-header > div:last-child {
+.go-page .table-header>div:last-child {
   align-items: flex-end;
   padding-right: 4px;
 }
@@ -179,35 +181,110 @@
 }
 
 /* Train line colors */
-.go-page .route-badge.BR { background: #3b82f6; }
-.go-page .route-badge.KI { background: #22c55e; }
-.go-page .route-badge.LE { background: #ef4444; }
-.go-page .route-badge.LW { background: #a8193d; }
-.go-page .route-badge.MI { background: #f97316; }
-.go-page .route-badge.RH { background: #06b6d4; }
-.go-page .route-badge.ST { background: #92400e; }
+.go-page .route-badge.BR {
+  background: #3b82f6;
+}
+
+.go-page .route-badge.KI {
+  background: #22c55e;
+}
+
+.go-page .route-badge.LE {
+  background: #ef4444;
+}
+
+.go-page .route-badge.LW {
+  background: #a8193d;
+}
+
+.go-page .route-badge.MI {
+  background: #f97316;
+}
+
+.go-page .route-badge.RH {
+  background: #06b6d4;
+}
+
+.go-page .route-badge.ST {
+  background: #92400e;
+}
 
 /* Bus route colors */
-.go-page .route-badge.\31 2 { background: #8b5cf6; }
-.go-page .route-badge.\31 5 { background: #ec4899; }
-.go-page .route-badge.\31 6 { background: #14b8a6; }
-.go-page .route-badge.\31 7 { background: #f59e0b; }
-.go-page .route-badge.\31 8 { background: #6366f1; }
-.go-page .route-badge.\31 9 { background: #10b981; }
-.go-page .route-badge.\32 0 { background: #f43f5e; }
-.go-page .route-badge.\32 1 { background: #0ea5e9; }
-.go-page .route-badge.\32 2 { background: #a855f7; }
-.go-page .route-badge.\32 3 { background: #84cc16; }
-.go-page .route-badge.\32 4 { background: #eab308; }
-.go-page .route-badge.\32 5 { background: #22d3ee; }
-.go-page .route-badge.\32 6 { background: #f472b6; }
-.go-page .route-badge.\32 7 { background: #4ade80; }
-.go-page .route-badge.\32 8 { background: #fb923c; }
-.go-page .route-badge.\32 9 { background: #c084fc; }
-.go-page .route-badge.\33 0 { background: #67e8f9; }
-.go-page .route-badge.\31  { background: #818cf8; }
+.go-page .route-badge.\31 2 {
+  background: #8b5cf6;
+}
 
-.go-page .route-badge.default { background: #6b7280; }
+.go-page .route-badge.\31 5 {
+  background: #ec4899;
+}
+
+.go-page .route-badge.\31 6 {
+  background: #14b8a6;
+}
+
+.go-page .route-badge.\31 7 {
+  background: #f59e0b;
+}
+
+.go-page .route-badge.\31 8 {
+  background: #6366f1;
+}
+
+.go-page .route-badge.\31 9 {
+  background: #10b981;
+}
+
+.go-page .route-badge.\32 0 {
+  background: #f43f5e;
+}
+
+.go-page .route-badge.\32 1 {
+  background: #0ea5e9;
+}
+
+.go-page .route-badge.\32 2 {
+  background: #a855f7;
+}
+
+.go-page .route-badge.\32 3 {
+  background: #84cc16;
+}
+
+.go-page .route-badge.\32 4 {
+  background: #eab308;
+}
+
+.go-page .route-badge.\32 5 {
+  background: #22d3ee;
+}
+
+.go-page .route-badge.\32 6 {
+  background: #f472b6;
+}
+
+.go-page .route-badge.\32 7 {
+  background: #4ade80;
+}
+
+.go-page .route-badge.\32 8 {
+  background: #fb923c;
+}
+
+.go-page .route-badge.\32 9 {
+  background: #c084fc;
+}
+
+.go-page .route-badge.\33 0 {
+  background: #67e8f9;
+}
+
+.go-page .route-badge.\31 {
+  background: #818cf8;
+}
+
+.go-page .route-badge.default {
+  background: #6b7280;
+}
 
 .go-page .direction {
   font-weight: 600;
@@ -241,7 +318,9 @@
 }
 
 @keyframes go-blink {
-  50% { opacity: 0.3; }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .go-page .loading {
@@ -259,7 +338,8 @@
   overflow: hidden;
   background: #000;
   color: #9fd30a;
-  height: 0; /* CSS default — inline style overrides when pulling */
+  height: 0;
+  /* CSS default — inline style overrides when pulling */
   min-height: 0;
 }
 
@@ -277,8 +357,13 @@
 }
 
 @keyframes pull-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Search */

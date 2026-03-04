@@ -41,7 +41,8 @@ export default function GOTransitPage() {
   const pullingActive = useRef(false);
   const pullDistanceRef = useRef(0);
   const isRefreshingRef = useRef(false);
-  const fetchDeparturesRef = useRef<() => Promise<void>>(async () => {});
+  const fetchDeparturesRef = useRef<() => Promise<void>>(async () => { });
+  const currentReqId = useRef(0);
 
   const PULL_THRESHOLD = 60;
   const MAX_PULL = 80;
@@ -132,9 +133,15 @@ export default function GOTransitPage() {
   };
 
   const fetchDepartures = async () => {
+    const reqId = Date.now();
+    currentReqId.current = reqId;
+
     try {
       const response = await fetch(`/go/api/departures?stop=${currentStop}`);
       const data = await response.json();
+
+      // If the user switched stations while this request was pending, discard it
+      if (currentReqId.current !== reqId) return;
 
       const lines = data.NextService?.Lines || [];
 
@@ -148,7 +155,11 @@ export default function GOTransitPage() {
       const allDepartures: Departure[] = lines
         .filter((line: any) => line.ComputedDepartureTime)
         .map((line: any) => {
-          const depTime = new Date(line.ComputedDepartureTime);
+          // Metrolinx API returns times in local America/Toronto string: "YYYY-MM-DD HH:mm:ss"
+          // We must treat this as local time. Replacing spaces with 'T' and appending timezone 
+          // keeps it accurate even if the user/browser is in a completely different timezone (like UTC containers)
+          const timeStr = line.ComputedDepartureTime.replace(" ", "T");
+          const depTime = new Date(`${timeStr}-05:00`); // using EST as baseline
           const mins = Math.round((depTime.getTime() - now.getTime()) / 60000);
 
           let dest = line.DirectionName || "Union Station";
@@ -203,6 +214,8 @@ export default function GOTransitPage() {
   };
 
   const selectStation = (code: string, name: string, type: TransportType = "trains") => {
+    // Clear departures to show "Loading..." immediately and prevent old data from lingering
+    setDepartureGroups([]);
     setCurrentStop(code);
     setStationName(name);
     setTransportType(type);
@@ -224,11 +237,11 @@ export default function GOTransitPage() {
 
   const filteredStations = searchQuery.trim()
     ? STATIONS.filter(
-        (s) =>
-          s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.line.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      (s) =>
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.line.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : [];
 
   const trainGroups = departureGroups.filter((g) => g.type === "T");
@@ -346,13 +359,11 @@ export default function GOTransitPage() {
       <div className="departures" id="departures">
         {displayedGroups.length === 0 ? (
           <div className="loading">
-            {transportType === "trains"
-              ? trainGroups.length === 0
+            {departureGroups.length === 0 && stationName
+              ? "Loading..."
+              : transportType === "trains"
                 ? "No trains"
-                : "Loading..."
-              : busGroups.length === 0
-              ? "No buses"
-              : "Loading..."}
+                : "No buses"}
           </div>
         ) : (
           displayedGroups.map((group, index) => {

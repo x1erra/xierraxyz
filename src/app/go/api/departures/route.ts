@@ -17,19 +17,22 @@ export async function GET(request: NextRequest) {
 
   try {
     const trainUrl = `${API_BASE}/Stop/NextService?key=${API_KEY}&stopCode=${stop}&limit=10`;
-    const trainRes = await fetch(trainUrl, { next: { revalidate: 30 } });
-    const trainData = trainRes.ok ? await trainRes.json() : { NextService: { Lines: [] } };
-
     const busStopCode = STATION_BUS_CODES[stop];
-    let busData = { NextService: { Lines: [] } };
 
-    if (busStopCode) {
-      const busUrl = `${API_BASE}/Stop/NextService?key=${API_KEY}&stopCode=${busStopCode}&limit=10`;
-      const busRes = await fetch(busUrl, { next: { revalidate: 30 } });
-      if (busRes.ok) {
-        busData = await busRes.json();
-      }
-    }
+    // Fetch trains unconditionally
+    const fetchTrain = fetch(trainUrl, { next: { revalidate: 30 } })
+      .then(res => res.ok ? res.json() : { NextService: { Lines: [] } })
+      .catch(() => ({ NextService: { Lines: [] } }));
+
+    // Fetch buses if the station supports it
+    const fetchBus = busStopCode
+      ? fetch(`${API_BASE}/Stop/NextService?key=${API_KEY}&stopCode=${busStopCode}&limit=10`, { next: { revalidate: 30 } })
+        .then(res => res.ok ? res.json() : { NextService: { Lines: [] } })
+        .catch(() => ({ NextService: { Lines: [] } }))
+      : Promise.resolve({ NextService: { Lines: [] } });
+
+    // Execute concurrently for significant speedup on combined stations
+    const [trainData, busData] = await Promise.all([fetchTrain, fetchBus]);
 
     const trainLines = trainData.NextService?.Lines || [];
     const busLines = busData.NextService?.Lines || [];

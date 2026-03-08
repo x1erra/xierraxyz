@@ -22,6 +22,11 @@ export const api = {
         return response.json();
     },
 
+    getServerStatus: async () => {
+        const response = await fetch(`${API_BASE_URL}/v2/status`);
+        return response.json();
+    },
+
     connectWebSocket: (onMessage: (data: any) => void, onOpen?: () => void, onClose?: () => void) => {
         const ws = new WebSocket(WS_BASE_URL);
 

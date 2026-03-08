@@ -68,6 +68,20 @@ export default function OurTubeApp() {
             }
         }
 
+        // Fetch actual server status to prune dead links
+        api.getServerStatus().then(status => {
+            if (status && status.files && Array.isArray(status.files)) {
+                const serverFiles = new Set(status.files);
+                setCompletedDownloads(prev => {
+                    const valid = prev.filter(f => serverFiles.has(f.filename));
+                    if (valid.length !== prev.length) {
+                        localStorage.setItem("ourtube_library", JSON.stringify(valid));
+                    }
+                    return valid;
+                });
+            }
+        }).catch(err => console.error("Failed to sync library status:", err));
+
         // Load myIds from local storage
         const savedIds = localStorage.getItem("ourtube_my_ids");
         if (savedIds) {

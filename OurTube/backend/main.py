@@ -115,12 +115,27 @@ def process_download(filename: str):
         raise HTTPException(status_code=400, detail="Invalid filename")
 
     if os.path.exists(target_path):
-        # FileResponse with filename parameter automatically sets Content-Disposition: attachment
         return FileResponse(
             path=target_path,
             filename=safe_filename,
             media_type='application/octet-stream'
         )
+        
+    # BACKUP FUZZY MATCH LOGIC
+    # If exact string fails due to proxy encoding or OS unicode weirdness,
+    # find the closest matching file in the directory.
+    try:
+        files = os.listdir(downloads_dir)
+        # Try finding a file that contains our sanitized string (ignoring case)
+        for f in files:
+            if safe_filename.lower() in f.lower() or f.lower() in safe_filename.lower():
+                return FileResponse(
+                    path=os.path.join(downloads_dir, f),
+                    filename=f,
+                    media_type='application/octet-stream'
+                )
+    except Exception as e:
+        print("Fuzzy match error:", e)
     
     # If not found, show what literal name we looked for
     raise HTTPException(status_code=404, detail=f"File not found: {safe_filename}")
@@ -148,4 +163,15 @@ def delete_download(filename: str):
         os.remove(target_path)
         return {"status": "deleted", "filename": safe_filename}
         
+    # BACKUP FUZZY MATCH LOGIC
+    try:
+        files = os.listdir(downloads_dir)
+        for f in files:
+            if safe_filename.lower() in f.lower() or f.lower() in safe_filename.lower():
+                fuzzy_path = os.path.join(downloads_dir, f)
+                os.remove(fuzzy_path)
+                return {"status": "deleted", "filename": f}
+    except Exception as e:
+        print("Fuzzy match delete error:", e)
+
     raise HTTPException(status_code=404, detail="File not found")

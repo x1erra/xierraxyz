@@ -16,17 +16,17 @@ export async function GET(request: NextRequest) {
   const stop = searchParams.get("stop") || "CL";
 
   try {
-    const trainUrl = `${API_BASE}/Stop/NextService?key=${API_KEY}&stopCode=${stop}&limit=10`;
+    const trainUrl = `${API_BASE}/Stop/NextService?key=${API_KEY}&stopCode=${stop}&limit=100`;
     const busStopCode = STATION_BUS_CODES[stop];
 
     // Fetch trains unconditionally
-    const fetchTrain = fetch(trainUrl, { next: { revalidate: 30 } })
+    const fetchTrain = fetch(trainUrl, { next: { revalidate: 15 } })
       .then(res => res.ok ? res.json() : { NextService: { Lines: [] } })
       .catch(() => ({ NextService: { Lines: [] } }));
 
     // Fetch buses if the station supports it
     const fetchBus = busStopCode
-      ? fetch(`${API_BASE}/Stop/NextService?key=${API_KEY}&stopCode=${busStopCode}&limit=10`, { next: { revalidate: 30 } })
+      ? fetch(`${API_BASE}/Stop/NextService?key=${API_KEY}&stopCode=${busStopCode}&limit=100`, { next: { revalidate: 15 } })
         .then(res => res.ok ? res.json() : { NextService: { Lines: [] } })
         .catch(() => ({ NextService: { Lines: [] } }))
       : Promise.resolve({ NextService: { Lines: [] } });

@@ -152,6 +152,12 @@
 /* Departures */
 .go-page .departures {
   border-top: 1px solid #1e1c1c;
+  transition: opacity 0.3s ease;
+}
+
+.go-page .departures.is-fetching {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .go-page .departure-row {
@@ -210,71 +216,71 @@
 }
 
 /* Bus route colors */
-.go-page .route-badge.\31 2 {
+.go-page .route-badge.route-12 {
   background: #8b5cf6;
 }
 
-.go-page .route-badge.\31 5 {
+.go-page .route-badge.route-15 {
   background: #ec4899;
 }
 
-.go-page .route-badge.\31 6 {
+.go-page .route-badge.route-16 {
   background: #14b8a6;
 }
 
-.go-page .route-badge.\31 7 {
+.go-page .route-badge.route-17 {
   background: #f59e0b;
 }
 
-.go-page .route-badge.\31 8 {
+.go-page .route-badge.route-18 {
   background: #6366f1;
 }
 
-.go-page .route-badge.\31 9 {
+.go-page .route-badge.route-19 {
   background: #10b981;
 }
 
-.go-page .route-badge.\32 0 {
+.go-page .route-badge.route-20 {
   background: #f43f5e;
 }
 
-.go-page .route-badge.\32 1 {
+.go-page .route-badge.route-21 {
   background: #0ea5e9;
 }
 
-.go-page .route-badge.\32 2 {
+.go-page .route-badge.route-22 {
   background: #a855f7;
 }
 
-.go-page .route-badge.\32 3 {
+.go-page .route-badge.route-23 {
   background: #84cc16;
 }
 
-.go-page .route-badge.\32 4 {
+.go-page .route-badge.route-24 {
   background: #eab308;
 }
 
-.go-page .route-badge.\32 5 {
+.go-page .route-badge.route-25 {
   background: #22d3ee;
 }
 
-.go-page .route-badge.\32 6 {
+.go-page .route-badge.route-26 {
   background: #f472b6;
 }
 
-.go-page .route-badge.\32 7 {
+.go-page .route-badge.route-27 {
   background: #4ade80;
 }
 
-.go-page .route-badge.\32 8 {
+.go-page .route-badge.route-28 {
   background: #fb923c;
 }
 
-.go-page .route-badge.\32 9 {
+.go-page .route-badge.route-29 {
   background: #c084fc;
 }
 
-.go-page .route-badge.\33 0 {
+.go-page .route-badge.route-30 {
   background: #67e8f9;
 }
 

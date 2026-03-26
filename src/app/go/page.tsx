@@ -35,6 +35,8 @@ export default function GOTransitPage() {
   const [pullDistance, setPullDistance] = useState(0);
   const [isPulling, setIsPulling] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef(0);
@@ -115,6 +117,19 @@ export default function GOTransitPage() {
   }, []);
 
   useEffect(() => {
+    setIsMounted(true);
+    const savedStop = localStorage.getItem("goTransitStop");
+    const savedName = localStorage.getItem("goTransitName");
+    const savedType = localStorage.getItem("goTransitType") as TransportType;
+    
+    if (savedStop) setCurrentStop(savedStop);
+    if (savedName) setStationName(savedName);
+    if (savedType) setTransportType(savedType);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     updateTime();
     fetchDepartures();
 
@@ -125,7 +140,22 @@ export default function GOTransitPage() {
       clearInterval(timeInterval);
       clearInterval(fetchInterval);
     };
-  }, [currentStop, transportType]);
+  }, [currentStop, isMounted]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (menuOpen && !(e.target as Element).closest(".station-info")) {
+        setMenuOpen(false);
+        if (!searchQuery) setSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [menuOpen, searchQuery]);
 
   const updateTime = () => {
     const now = new Date();
@@ -153,12 +183,13 @@ export default function GOTransitPage() {
       const now = new Date();
 
       const allDepartures: Departure[] = lines
-        .filter((line: any) => line.ComputedDepartureTime)
+        .filter((line: any) => line.ComputedDepartureTime || line.ScheduledDepartureTime)
         .map((line: any) => {
           // Metrolinx API returns times in local America/Toronto string: "YYYY-MM-DD HH:mm:ss"
           // We must treat this as local time. Replacing spaces with 'T' and appending timezone 
           // keeps it accurate even if the user/browser is in a completely different timezone (like UTC containers)
-          const timeStr = line.ComputedDepartureTime.replace(" ", "T");
+          const departureObj = line.ComputedDepartureTime || line.ScheduledDepartureTime;
+          const timeStr = departureObj.replace(" ", "T");
           const depTime = new Date(`${timeStr}-05:00`); // using EST as baseline
           const mins = Math.round((depTime.getTime() - now.getTime()) / 60000);
 
@@ -166,7 +197,7 @@ export default function GOTransitPage() {
           dest = dest.replace(/^[A-Z]+\s*-\s*/, "");
 
           return {
-            platform: line.ScheduledPlatform || "-",
+            platform: line.ActualPlatform || line.ScheduledPlatform || "-",
             route: line.LineCode || "LW",
             destination: dest,
             minutes: mins,
@@ -208,18 +239,25 @@ export default function GOTransitPage() {
         });
 
       setDepartureGroups(groupedDepartures);
+      setIsFetching(false);
     } catch (err) {
       console.error(err);
+      setIsFetching(false);
     }
   };
 
   const selectStation = (code: string, name: string, type: TransportType = "trains") => {
-    // Clear departures to show "Loading..." immediately and prevent old data from lingering
-    setDepartureGroups([]);
+    if (code !== currentStop) {
+      setIsFetching(true);
+    }
     setCurrentStop(code);
     setStationName(name);
     setTransportType(type);
     setMenuOpen(false);
+
+    localStorage.setItem("goTransitStop", code);
+    localStorage.setItem("goTransitName", name);
+    localStorage.setItem("goTransitType", type);
   };
 
   const toggleMenu = () => {
@@ -243,6 +281,10 @@ export default function GOTransitPage() {
         s.line.toLowerCase().includes(searchQuery.toLowerCase())
     )
     : [];
+
+  if (!isMounted) {
+    return <div className="go-page" style={{ backgroundColor: "#000" }} />;
+  }
 
   const trainGroups = departureGroups.filter((g) => g.type === "T");
   const busGroups = departureGroups.filter((g) => g.type === "B");
@@ -356,10 +398,10 @@ export default function GOTransitPage() {
         </div>
       </div>
 
-      <div className="departures" id="departures">
+      <div className={`departures ${isFetching ? "is-fetching" : ""}`} id="departures">
         {displayedGroups.length === 0 ? (
           <div className="loading">
-            {departureGroups.length === 0 && stationName
+            {isFetching || (departureGroups.length === 0 && stationName)
               ? "Loading..."
               : transportType === "trains"
                 ? "No trains"
@@ -367,7 +409,8 @@ export default function GOTransitPage() {
           </div>
         ) : (
           displayedGroups.map((group, index) => {
-            const routeClass = group.route || "default";
+            const isNumeric = !isNaN(Number(group.route));
+            const routeClass = group.route ? (isNumeric ? `route-${group.route}` : group.route) : "default";
 
             return (
               <div className="departure-row" key={index}>

@@ -182,15 +182,23 @@ export default function GOTransitPage() {
 
       const now = new Date();
 
+      // Retrieve the current Toronto timezone offset (e.g. -04:00 for EDT or -05:00 for EST)
+      const torontoFormatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Toronto",
+        timeZoneName: "longOffset"
+      });
+      const tzPart = torontoFormatter.formatToParts(now).find(p => p.type === "timeZoneName")?.value || "GMT-05:00";
+      // Ensure we replace standard GMT and any legacy Unicode minus operators
+      const tzOffset = tzPart.replace("GMT", "").replace("\u2212", "-");
+
       const allDepartures: Departure[] = lines
         .filter((line: any) => line.ComputedDepartureTime || line.ScheduledDepartureTime)
         .map((line: any) => {
           // Metrolinx API returns times in local America/Toronto string: "YYYY-MM-DD HH:mm:ss"
-          // We must treat this as local time. Replacing spaces with 'T' and appending timezone 
-          // keeps it accurate even if the user/browser is in a completely different timezone (like UTC containers)
+          // We dynamically apply the current Toronto offset to keep mapping robust against DST changes
           const departureObj = line.ComputedDepartureTime || line.ScheduledDepartureTime;
           const timeStr = departureObj.replace(" ", "T");
-          const depTime = new Date(`${timeStr}-05:00`); // using EST as baseline
+          const depTime = new Date(`${timeStr}${tzOffset}`);
           const mins = Math.round((depTime.getTime() - now.getTime()) / 60000);
 
           let dest = line.DirectionName || "Union Station";

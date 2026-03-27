@@ -117,8 +117,8 @@
 /* Table Header */
 .go-page .table-header {
   display: grid;
-  grid-template-columns: 50px 50px 1fr 90px;
-  gap: 14px;
+  grid-template-columns: 65px 50px 1fr 90px;
+  gap: 12px;
   padding: 14px 24px;
   background: #1e1c1c;
   font-size: 14px;
@@ -162,8 +162,8 @@
 
 .go-page .departure-row {
   display: grid;
-  grid-template-columns: 50px 50px 1fr 90px;
-  gap: 14px;
+  grid-template-columns: 65px 50px 1fr 90px;
+  gap: 12px;
   padding: 18px 24px;
   border-bottom: 3px dotted #dbdbdb;
   align-items: center;
@@ -171,9 +171,11 @@
 
 .go-page .platform {
   font-weight: 700;
-  font-size: 20px;
+  font-size: clamp(16px, 4.5vw, 20px);
   color: #9fd30a;
   text-align: center;
+  white-space: nowrap;
+  letter-spacing: -0.5px;
 }
 
 .go-page .route-badge {

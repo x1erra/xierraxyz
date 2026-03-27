@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
             const trips = data.AllDepartures?.Trip || [];
             const mappedLines = trips.map((trip: any) => {
                const stops = trip.Stops || [];
+               const isExpress = stops.length > 0 && stops[0].Name === "Express To";
                const destination = stops.length > 0 ? stops[stops.length - 1].Name : trip.Service;
                const lineCodeMap: Record<string, string> = {
                  "Lakeshore West": "LW",
@@ -48,7 +49,8 @@ export async function GET(request: NextRequest) {
                   ScheduledPlatform: "",
                   ServiceType: trip.ServiceType || "T",
                   ComputedDepartureTime: trip.Time,
-                  ScheduledDepartureTime: trip.Time
+                  ScheduledDepartureTime: trip.Time,
+                  IsExpress: isExpress
                };
             });
             return { NextService: { Lines: mappedLines } };

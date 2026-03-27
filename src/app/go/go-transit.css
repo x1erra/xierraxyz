@@ -444,3 +444,9 @@
   font-size: 14px;
   color: #666;
 }
+
+.go-page .express-badge {
+  color: #ffb100;
+  fill: #ffb100;
+  flex-shrink: 0;
+}

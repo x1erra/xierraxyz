@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Train, Bus, RefreshCw } from "lucide-react";
+import { Train, Bus, RefreshCw, Zap } from "lucide-react";
 import "./go-transit.css";
 import { STATIONS } from "./stations";
 
@@ -11,6 +11,7 @@ interface Departure {
   destination: string;
   minutes: number;
   type: "T" | "B";
+  isExpress: boolean;
 }
 
 interface DepartureGroup {
@@ -19,6 +20,7 @@ interface DepartureGroup {
   destination: string;
   times: number[];
   type: "T" | "B";
+  isExpress: boolean;
 }
 
 type TransportType = "trains" | "buses";
@@ -210,6 +212,7 @@ export default function GOTransitPage() {
             destination: dest,
             minutes: mins,
             type: line.ServiceType || "T",
+            isExpress: line.IsExpress || (line.DirectionName && line.DirectionName.toLowerCase().includes("express")) || false,
           };
         })
         .filter((d: Departure) => d.minutes >= 0)
@@ -227,6 +230,7 @@ export default function GOTransitPage() {
             destination: dep.destination,
             times: [],
             type: dep.type,
+            isExpress: dep.isExpress,
           };
         }
 
@@ -426,7 +430,10 @@ export default function GOTransitPage() {
                 <div>
                   <span className={`route-badge ${routeClass}`}>{group.route}</span>
                 </div>
-                <div className="direction">{group.destination}</div>
+                <div className="direction" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {group.destination}
+                  {group.isExpress && <Zap size={14} className="express-badge" strokeWidth={2.5} />}
+                </div>
                 <div className="times-container">
                   {group.times.map((mins, timeIndex) => {
                     const isFirst = timeIndex === 0;

@@ -53,6 +53,13 @@ def get_debug_status():
         "files": files
     }
 
+@app.get("/api/v2/tasks/{task_id}")
+def get_task_status(task_id: str):
+    task = downloader_service.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)

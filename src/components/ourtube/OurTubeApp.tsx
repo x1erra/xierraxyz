@@ -8,6 +8,109 @@ import { PullToRefresh } from '../PullToRefresh';
 
 import Starfield from '@/components/Starfield';
 
+type ActiveDownload = {
+    id: string;
+    url?: string;
+    filename?: string;
+    percent?: string;
+    speed?: string;
+    eta?: string;
+    status?: string;
+    error?: string;
+    file_size?: number;
+    createdAt: number;
+    lastUpdateAt: number;
+};
+
+type CompletedDownload = {
+    filename: string;
+    size: number;
+    date: number;
+};
+
+type BackendStatus = {
+    status: string;
+    yt_dlp_version?: string;
+    downloads_count?: number;
+    files?: string[];
+};
+
+type BackendTask = {
+    id: string;
+    status?: string;
+    url?: string;
+    filename?: string;
+    percent?: string;
+    speed?: string;
+    eta?: string;
+    error?: string;
+    file_size?: number;
+    created_at?: number;
+    updated_at?: number;
+};
+
+const STALLED_DOWNLOAD_MS = 15000;
+const TASK_RECOVERY_POLL_MS = 7000;
+const SERVER_STATUS_REFRESH_MS = 30000;
+
+const STATUS_LABELS: Record<string, string> = {
+    queued: "Queued",
+    initializing: "Initializing",
+    starting: "Fetching metadata",
+    downloading: "Downloading",
+    retrying: "Retrying extractor",
+    merging: "Finalizing",
+    finished: "Finished",
+    error: "Failed",
+};
+
+const persistLibrary = (downloads: CompletedDownload[]) => {
+    localStorage.setItem("ourtube_library", JSON.stringify(downloads));
+};
+
+const mergeLibrary = (current: CompletedDownload[], incoming: CompletedDownload[]) => {
+    const merged = new Map<string, CompletedDownload>();
+
+    [...current, ...incoming].forEach((entry) => {
+        const existing = merged.get(entry.filename);
+        merged.set(entry.filename, {
+            ...existing,
+            ...entry,
+            size: entry.size ?? existing?.size ?? 0,
+            date: entry.date ?? existing?.date ?? Date.now(),
+        });
+    });
+
+    return Array.from(merged.values()).sort((a, b) => b.date - a.date);
+};
+
+const applyTaskUpdate = (
+    current: ActiveDownload | undefined,
+    update: Partial<ActiveDownload> & Partial<BackendTask>,
+): ActiveDownload => {
+    const updatedAt = typeof update.updated_at === "number" ? update.updated_at * 1000 : Date.now();
+
+    return {
+        ...current,
+        ...update,
+        id: update.id || current?.id || "",
+        createdAt: current?.createdAt ?? (typeof update.created_at === "number" ? update.created_at * 1000 : Date.now()),
+        lastUpdateAt: updatedAt,
+    };
+};
+
+const formatStatusLabel = (status?: string) => {
+    if (!status) return "Pending";
+    return STATUS_LABELS[status] || status.replace(/_/g, " ");
+};
+
+const getStatusTone = (status?: string) => {
+    if (status === "retrying") return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+    if (status === "error") return "border-red-500/30 bg-red-500/10 text-red-200";
+    if (status === "downloading" || status === "merging") return "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
+    return "border-white/10 bg-black/40 text-zinc-400";
+};
+
 const InfoTooltip = ({ text }: { text: string }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -47,8 +150,8 @@ const InfoTooltip = ({ text }: { text: string }) => {
 
 export default function OurTubeApp() {
     const [url, setUrl] = useState("");
-    const [activeDownloads, setActiveDownloads] = useState<any>({});
-    const [completedDownloads, setCompletedDownloads] = useState<any[]>([]);
+    const [activeDownloads, setActiveDownloads] = useState<Record<string, ActiveDownload>>({});
+    const [completedDownloads, setCompletedDownloads] = useState<CompletedDownload[]>([]);
     const [quality, setQuality] = useState("best");
     const [format, setFormat] = useState("any");
     const [showAdvanced, setShowAdvanced] = useState(false);
@@ -56,32 +159,64 @@ export default function OurTubeApp() {
     const [strictMode, setStrictMode] = useState(false);
     const [splitChapters, setSplitChapters] = useState(false);
     const [lastError, setLastError] = useState("");
+    const [backendStatus, setBackendStatus] = useState<BackendStatus | null>(null);
+    const [lastServerSyncAt, setLastServerSyncAt] = useState<number | null>(null);
     const myIds = useRef<Set<string>>(new Set());
+    const activeDownloadsRef = useRef<Record<string, ActiveDownload>>({});
+
+    useEffect(() => {
+        activeDownloadsRef.current = activeDownloads;
+    }, [activeDownloads]);
+
+    const syncServerStatus = async () => {
+        const status = await api.getServerStatus() as BackendStatus;
+        setBackendStatus(status);
+        setLastServerSyncAt(Date.now());
+
+        if (status.files && Array.isArray(status.files)) {
+            const serverFiles = new Set(status.files);
+            setCompletedDownloads((prev) => {
+                const valid = prev.filter((file) => serverFiles.has(file.filename));
+                if (valid.length !== prev.length) {
+                    persistLibrary(valid);
+                }
+                return valid;
+            });
+        }
+
+        return status;
+    };
+
+    const addCompletedDownloads = (incoming: CompletedDownload[]) => {
+        if (!incoming.length) return;
+
+        setCompletedDownloads((prev) => {
+            const merged = mergeLibrary(prev, incoming);
+            persistLibrary(merged);
+            return merged;
+        });
+    };
 
     useEffect(() => {
         // Load library from local storage
         const savedLibrary = localStorage.getItem("ourtube_library");
         if (savedLibrary) {
             try {
-                setCompletedDownloads(JSON.parse(savedLibrary));
+                const parsed = JSON.parse(savedLibrary);
+                if (Array.isArray(parsed)) {
+                    setCompletedDownloads(parsed.map((entry) => ({
+                        filename: entry.filename,
+                        size: entry.size || 0,
+                        date: entry.date || Date.now(),
+                    })));
+                }
             } catch (e) {
                 console.error("Failed to parse local library");
             }
         }
 
         // Fetch actual server status to prune dead links
-        api.getServerStatus().then(status => {
-            if (status && status.files && Array.isArray(status.files)) {
-                const serverFiles = new Set(status.files);
-                setCompletedDownloads(prev => {
-                    const valid = prev.filter(f => serverFiles.has(f.filename));
-                    if (valid.length !== prev.length) {
-                        localStorage.setItem("ourtube_library", JSON.stringify(valid));
-                    }
-                    return valid;
-                });
-            }
-        }).catch(err => {
+        syncServerStatus().catch(err => {
             console.error("Failed to sync library status:", err);
             setLastError(err.message || "Could not reach the OurTube backend");
         });
@@ -108,18 +243,22 @@ export default function OurTubeApp() {
                 if (type === "progress" && downloadId) {
                     if (!myIds.current.has(downloadId)) return;
 
-                    setActiveDownloads((prev: any) => ({
+                    setActiveDownloads((prev) => ({
                         ...prev,
-                        [downloadId]: {
-                            ...(prev[downloadId] || {}),
-                            ...event,
-                            ...(nestedData || {})
-                        },
+                        [downloadId]: applyTaskUpdate(prev[downloadId], {
+                            id: downloadId,
+                            url: event.url || nestedData?.url,
+                            filename: nestedData?.filename || event.filename,
+                            percent: nestedData?.percent || event.percent,
+                            speed: nestedData?.speed || event.speed,
+                            eta: nestedData?.eta || event.eta,
+                            status: nestedData?.status || event.status,
+                        }),
                     }));
                 } else if (type === "finished" && downloadId) {
                     if (!myIds.current.has(downloadId)) {
                         // Clean up active if it was there (shouldn't be, but good hygiene)
-                        setActiveDownloads((prev: any) => {
+                        setActiveDownloads((prev) => {
                             const next = { ...prev };
                             if (next[downloadId]) delete next[downloadId];
                             return next;
@@ -128,7 +267,7 @@ export default function OurTubeApp() {
                     }
 
                     // Update Active State
-                    setActiveDownloads((prev: any) => {
+                    setActiveDownloads((prev) => {
                         const next = { ...prev };
                         delete next[downloadId];
                         return next;
@@ -139,17 +278,14 @@ export default function OurTubeApp() {
                     const fileSize = event.file_size || (nestedData && nestedData.file_size) || 0;
 
                     if (filename) {
-                        setCompletedDownloads((prev) => {
-                            const newEntry = { filename, size: fileSize, date: Date.now() };
-                            const unique = [newEntry, ...prev.filter(p => p.filename !== filename)];
-                            localStorage.setItem("ourtube_library", JSON.stringify(unique));
-                            return unique;
-                        });
+                        addCompletedDownloads([{ filename, size: fileSize, date: Date.now() }]);
                     }
+
+                    void syncServerStatus().catch(() => null);
 
                 } else if (type === "error") {
                     console.error("Download error:", error);
-                    setActiveDownloads((prev: any) => {
+                    setActiveDownloads((prev) => {
                         const next = { ...prev };
                         if (downloadId) delete next[downloadId];
                         return next;
@@ -168,6 +304,75 @@ export default function OurTubeApp() {
         return () => ws.close();
     }, []);
 
+    useEffect(() => {
+        const intervalId = window.setInterval(() => {
+            void syncServerStatus().catch(() => null);
+        }, SERVER_STATUS_REFRESH_MS);
+
+        return () => window.clearInterval(intervalId);
+    }, []);
+
+    useEffect(() => {
+        const intervalId = window.setInterval(async () => {
+            const active = Object.values(activeDownloadsRef.current);
+            if (!active.length) return;
+
+            const staleDownloads = active.filter((download) => Date.now() - download.lastUpdateAt > STALLED_DOWNLOAD_MS);
+            if (!staleDownloads.length) return;
+
+            const results = await Promise.allSettled(staleDownloads.map((download) => api.getTaskStatus(download.id)));
+
+            const recoveredEntries: CompletedDownload[] = [];
+            let latestError = "";
+
+            setActiveDownloads((prev) => {
+                const next = { ...prev };
+
+                staleDownloads.forEach((download, index) => {
+                    const result = results[index];
+                    if (result.status !== "fulfilled") return;
+
+                    const task = result.value as BackendTask;
+                    if (!next[download.id]) return;
+
+                    if (task.status === "finished" && task.filename) {
+                        recoveredEntries.push({
+                            filename: task.filename,
+                            size: task.file_size || 0,
+                            date: Date.now(),
+                        });
+                        delete next[download.id];
+                        return;
+                    }
+
+                    if (task.status === "error") {
+                        latestError = task.error || "Download failed";
+                        delete next[download.id];
+                        return;
+                    }
+
+                    next[download.id] = applyTaskUpdate(next[download.id], task);
+                });
+
+                return next;
+            });
+
+            if (recoveredEntries.length) {
+                addCompletedDownloads(recoveredEntries);
+            }
+
+            if (latestError) {
+                setLastError(latestError);
+            }
+
+            if (recoveredEntries.length || latestError) {
+                void syncServerStatus().catch(() => null);
+            }
+        }, TASK_RECOVERY_POLL_MS);
+
+        return () => window.clearInterval(intervalId);
+    }, []);
+
     const handleDownload = async () => {
         if (!url) return;
 
@@ -182,15 +387,18 @@ export default function OurTubeApp() {
             myIds.current.add(taskId);
             localStorage.setItem("ourtube_my_ids", JSON.stringify(Array.from(myIds.current)));
 
-            setActiveDownloads((prev: any) => ({
+            setActiveDownloads((prev) => ({
                 ...prev,
                 [taskId]: {
                     id: taskId,
+                    url,
                     filename: url,
                     percent: "0%",
                     speed: "Queued",
                     eta: "Waiting...",
                     status: "queued",
+                    createdAt: Date.now(),
+                    lastUpdateAt: Date.now(),
                 }
             }));
 
@@ -207,7 +415,7 @@ export default function OurTubeApp() {
         } catch (e) {
             console.error(e);
             setLastError(e instanceof Error ? e.message : "Failed to start download");
-            setActiveDownloads((prev: any) => {
+            setActiveDownloads((prev) => {
                 const next = { ...prev };
                 delete next[taskId];
                 return next;
@@ -222,7 +430,7 @@ export default function OurTubeApp() {
             await api.deleteDownload(filename);
             setCompletedDownloads((prev) => {
                 const updated = prev.filter((d) => d.filename !== filename);
-                localStorage.setItem("ourtube_library", JSON.stringify(updated));
+                persistLibrary(updated);
                 return updated;
             });
         } catch (e) {
@@ -374,9 +582,29 @@ export default function OurTubeApp() {
                         {showAdvanced && (
                             <div className="bg-black/90 border border-white/10 rounded-xl p-6 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <div className="space-y-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] uppercase tracking-widest text-zinc-500">Auto Start</label>
-                                        <select className="w-full bg-black border border-white/10 rounded-lg p-2 text-sm text-zinc-300"><option>YES</option><option>NO</option></select>
+                                    <div className="space-y-3 border border-white/10 rounded-xl p-4 bg-white/[0.03]">
+                                        <div className="text-[10px] uppercase tracking-widest text-zinc-500">Debug</div>
+                                        <div className="grid grid-cols-2 gap-3 text-xs">
+                                            <div>
+                                                <div className="text-zinc-500 uppercase tracking-[0.18em] text-[10px] mb-1">Backend</div>
+                                                <div className="text-white font-mono">{backendStatus?.status || "offline"}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-zinc-500 uppercase tracking-[0.18em] text-[10px] mb-1">Socket</div>
+                                                <div className="text-white font-mono">{connected ? "connected" : "disconnected"}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-zinc-500 uppercase tracking-[0.18em] text-[10px] mb-1">yt-dlp</div>
+                                                <div className="text-white font-mono">{backendStatus?.yt_dlp_version || "unknown"}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-zinc-500 uppercase tracking-[0.18em] text-[10px] mb-1">Tracked Jobs</div>
+                                                <div className="text-white font-mono">{Object.keys(activeDownloads).length}</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-[10px] text-zinc-500 font-mono">
+                                            Last sync: {lastServerSyncAt ? new Date(lastServerSyncAt).toLocaleTimeString() : "never"}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="space-y-4">
@@ -422,14 +650,19 @@ export default function OurTubeApp() {
                         <div className="space-y-4">
                             <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] border-b border-white/10 pb-2">Processing Queue</h2>
                             <div className="space-y-3">
-                                {Object.values(activeDownloads).map((d: any) => (
+                                {Object.values(activeDownloads).map((d) => (
                                     <div key={d.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col md:flex-row md:items-center gap-4 relative overflow-hidden group">
                                         <div className="absolute bottom-0 left-0 h-0.5 bg-white/20 w-full md:hidden">
                                             <div className="h-full bg-white transition-all duration-300" style={{ width: d.percent }} />
                                         </div>
 
                                         <div className="flex-1 min-w-0 z-10">
-                                            <div className="text-sm font-medium truncate text-white mb-2">{d.filename || "Fetching metadata..."}</div>
+                                            <div className="flex items-center gap-2 mb-2 min-w-0">
+                                                <div className="text-sm font-medium truncate text-white">{d.filename || "Fetching metadata..."}</div>
+                                                <span className={`shrink-0 border rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${getStatusTone(d.status)}`}>
+                                                    {formatStatusLabel(d.status)}
+                                                </span>
+                                            </div>
 
                                             <div className="hidden md:block h-1 bg-white/10 rounded-full overflow-hidden w-full max-w-sm">
                                                 <div className="h-full bg-white transition-all duration-300 shadow-[0_0_10px_rgba(255,255,255,0.5)]" style={{ width: d.percent }} />

@@ -27,6 +27,7 @@ def is_youtube_url(url: str) -> bool:
 class Downloader:
     def __init__(self):
         self.active_downloads = {}
+        self.active_downloads_lock = threading.Lock()
         # Ensure folders exist
         for folder in ["downloads", "processing"]:
             if not os.path.exists(folder):
@@ -43,10 +44,38 @@ class Downloader:
         # Use provided ID or generate a new one
         if not task_id:
             task_id = str(uuid.uuid4())
+
+        self._set_task_state(
+            task_id,
+            id=task_id,
+            url=url,
+            format_id=format_id,
+            quality=quality,
+            strict_mode=strict_mode,
+            split_chapters=split_chapters,
+            status="queued",
+            percent="0%",
+            speed="Queued",
+            eta="Waiting...",
+            created_at=time.time(),
+        )
         
         # Use default executor (ThreadPoolExecutor) to run blocking download
         loop.run_in_executor(None, self._download_task, task_id, url, format_id, quality, strict_mode, split_chapters)
         return task_id
+
+    def _set_task_state(self, task_id, **updates):
+        with self.active_downloads_lock:
+            current = dict(self.active_downloads.get(task_id, {"id": task_id}))
+            current.update({key: value for key, value in updates.items() if value is not None})
+            current.setdefault("created_at", time.time())
+            current["updated_at"] = time.time()
+            self.active_downloads[task_id] = current
+
+    def get_task(self, task_id):
+        with self.active_downloads_lock:
+            task = self.active_downloads.get(task_id)
+            return dict(task) if task else None
 
     def _cleanup_processing_files(self, task_id):
         processing_dir = "processing"
@@ -65,6 +94,14 @@ class Downloader:
                     pass
 
     def _broadcast_progress(self, payload):
+        task_id = payload.get("id")
+        if task_id:
+            updates = {key: value for key, value in payload.items() if key != "type"}
+            updates["event_type"] = payload.get("type")
+            if payload.get("type") == "error" and "status" not in updates:
+                updates["status"] = "error"
+            self._set_task_state(task_id, **updates)
+
         asyncio.run_coroutine_threadsafe(manager.broadcast(payload), self.loop)
 
     def _run_download_attempt(self, ydl_opts, task_id, url):
@@ -108,7 +145,7 @@ class Downloader:
                     'eta': d.get('_eta_str', '0'),
                     'status': 'downloading'
                 }
-                asyncio.run_coroutine_threadsafe(manager.broadcast(data), self.loop)
+                self._broadcast_progress(data)
         
         ydl_opts = {
             'outtmpl': f'processing/{task_id}.%(ext)s', # Use task_id for tracking temp file
@@ -267,11 +304,12 @@ class Downloader:
         except Exception as e:
             print(f"Error downloading {url}: {e}")
             # Broadcast error
-            asyncio.run_coroutine_threadsafe(manager.broadcast({
+            self._broadcast_progress({
                 'type': 'error',
                 'url': url,
                 'id': task_id,
-                'error': str(e)
-            }), self.loop)
+                'error': str(e),
+                'status': 'error',
+            })
     
 downloader_service = Downloader()

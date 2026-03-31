@@ -40,6 +40,11 @@ export const api = {
         return parseResponse(response);
     },
 
+    getTaskStatus: async (taskId: string) => {
+        const response = await fetch(`${API_BASE_URL}/v2/tasks/${encodeURIComponent(taskId)}`);
+        return parseResponse(response);
+    },
+
     connectWebSocket: (onMessage: (data: any) => void, onOpen?: () => void, onClose?: () => void, onError?: () => void) => {
         const ws = new WebSocket(WS_BASE_URL);
         let heartbeatId: number | null = null;

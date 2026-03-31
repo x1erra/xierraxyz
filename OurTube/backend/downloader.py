@@ -20,6 +20,10 @@ def sanitize_filename(name):
     # 4. Limit length
     return sanitized[:120]
 
+def is_youtube_url(url: str) -> bool:
+    lowered = url.lower()
+    return "youtube.com/" in lowered or "youtu.be/" in lowered
+
 class Downloader:
     def __init__(self):
         self.active_downloads = {}
@@ -74,6 +78,17 @@ class Downloader:
             'noplaylist': strict_mode, # Strict Mode
             'split_chapters': split_chapters, # Split Chapters
         }
+
+        if is_youtube_url(url):
+            # The plain web client has been more reliable on the Pi IP than the
+            # default rotating client set, and reusing extracted info avoids a
+            # second YouTube extraction pass that can fail after metadata loads.
+            ydl_opts['extractor_args'] = {
+                'youtube': {
+                    'player_client': ['web'],
+                    'formats': ['incomplete'],
+                }
+            }
 
         if split_chapters:
              ydl_opts['force_keyframes_at_cuts'] = True # Ensure clean cuts for chapters
@@ -140,7 +155,8 @@ class Downloader:
                 }), self.loop)
 
                 # 2. DOWNLOAD (to processing folder)
-                ydl.download([url])
+                # Reuse the extracted info to avoid a second extractor pass.
+                ydl.process_ie_result(info, download=True)
                 
                 # 3. VERIFY & MOVE (Atomic)
                 # Broadcast merging status

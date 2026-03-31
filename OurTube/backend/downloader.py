@@ -48,6 +48,51 @@ class Downloader:
         loop.run_in_executor(None, self._download_task, task_id, url, format_id, quality, strict_mode, split_chapters)
         return task_id
 
+    def _cleanup_processing_files(self, task_id):
+        processing_dir = "processing"
+        if not os.path.exists(processing_dir):
+            return
+
+        for name in os.listdir(processing_dir):
+            if not name.startswith(f"{task_id}."):
+                continue
+
+            path = os.path.join(processing_dir, name)
+            if os.path.isfile(path):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+
+    def _broadcast_progress(self, payload):
+        asyncio.run_coroutine_threadsafe(manager.broadcast(payload), self.loop)
+
+    def _run_download_attempt(self, ydl_opts, task_id, url):
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            self._broadcast_progress({
+                'type': 'progress',
+                'id': task_id,
+                'status': 'initializing',
+                'percent': '0%',
+                'speed': 'Connecting...',
+                'eta': 'Preparing...'
+            })
+
+            info = ydl.extract_info(url, download=False)
+            title = info.get('title', 'video')
+
+            self._broadcast_progress({
+                'type': 'progress',
+                'id': task_id,
+                'filename': title,
+                'status': 'starting',
+                'percent': '0%',
+            })
+
+            # Reuse the extracted info to avoid a second extractor pass.
+            ydl.process_ie_result(info, download=True)
+            return title
+
     def _download_task(self, task_id, url, format_id, quality, strict_mode, split_chapters):
         # We use the ID as the temporary filename to avoid collisions and special char issues in paths
         
@@ -78,17 +123,6 @@ class Downloader:
             'noplaylist': strict_mode, # Strict Mode
             'split_chapters': split_chapters, # Split Chapters
         }
-
-        if is_youtube_url(url):
-            # The plain web client has been more reliable on the Pi IP than the
-            # default rotating client set, and reusing extracted info avoids a
-            # second YouTube extraction pass that can fail after metadata loads.
-            ydl_opts['extractor_args'] = {
-                'youtube': {
-                    'player_client': ['web'],
-                    'formats': ['incomplete'],
-                }
-            }
 
         if split_chapters:
              ydl_opts['force_keyframes_at_cuts'] = True # Ensure clean cuts for chapters
@@ -129,96 +163,106 @@ class Downloader:
         # yt-dlp handles many automatically, but we can enhance it.
         
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                # 1. INITIALIZE & EXTRACT
-                # Broadcast immediately
-                asyncio.run_coroutine_threadsafe(manager.broadcast({
-                    'type': 'progress',
-                    'id': task_id,
-                    'status': 'initializing',
-                    'percent': '0%',
-                    'speed': 'Connecting...',
-                    'eta': 'Preparing...'
-                }), self.loop)
+            title = None
+            attempt_opts = [ydl_opts]
 
-                info = ydl.extract_info(url, download=False)
-                # We don't use the video_id for the task ID anymore, but we can keep it for reference if needed
-                title = info.get('title', 'video')
-                
-                # Update with title
-                asyncio.run_coroutine_threadsafe(manager.broadcast({
-                    'type': 'progress',
-                    'id': task_id,
-                    'filename': title,
-                    'status': 'starting',
-                    'percent': '0%',
-                }), self.loop)
+            if is_youtube_url(url):
+                fallback_opts = dict(ydl_opts)
+                fallback_opts['extractor_args'] = {
+                    'youtube': {
+                        'player_client': ['web'],
+                        'formats': ['incomplete'],
+                    }
+                }
+                attempt_opts.append(fallback_opts)
 
-                # 2. DOWNLOAD (to processing folder)
-                # Reuse the extracted info to avoid a second extractor pass.
-                ydl.process_ie_result(info, download=True)
+            last_error = None
+
+            for attempt_index, opts in enumerate(attempt_opts):
+                try:
+                    title = self._run_download_attempt(opts, task_id, url)
+                    break
+                except Exception as attempt_error:
+                    last_error = attempt_error
+
+                    if attempt_index == len(attempt_opts) - 1:
+                        raise
+
+                    print(f"Retrying {url} with YouTube-safe fallback after: {attempt_error}")
+                    self._cleanup_processing_files(task_id)
+                    self._broadcast_progress({
+                        'type': 'progress',
+                        'id': task_id,
+                        'status': 'retrying',
+                        'percent': '0%',
+                        'speed': 'Retrying extractor',
+                        'eta': 'Trying alternate YouTube path...'
+                    })
+
+            if title is None and last_error:
+                raise last_error
                 
                 # 3. VERIFY & MOVE (Atomic)
                 # Broadcast merging status
-                asyncio.run_coroutine_threadsafe(manager.broadcast({
-                    'type': 'progress',
-                    'id': task_id,
-                    'status': 'merging',
-                    'percent': '99%',
-                    'speed': 'Processing',
-                    'eta': 'Finalizing...'
-                }), self.loop)
+            self._broadcast_progress({
+                'type': 'progress',
+                'id': task_id,
+                'status': 'merging',
+                'percent': '99%',
+                'speed': 'Processing',
+                'eta': 'Finalizing...'
+            })
 
-                # Small sleep to let ffmpeg close descriptors
-                time.sleep(2)
+            # Small sleep to let ffmpeg close descriptors
+            time.sleep(2)
 
-                # Find the actual resulting file
-                # yt-dlp might have changed the ext during merge
-                candidate_exts = [format_id if format_id != 'any' else 'mp4', 'mp4', 'mkv', 'webm', 'm4a', 'mp3', 'wav', 'jpg', 'webp']
-                actual_file = None
-                
-                # Try the direct name first using task_id
-                possible_paths = [
-                    os.path.join("processing", f"{task_id}.{ext}") for ext in candidate_exts
-                ]
-                
-                for path in possible_paths:
-                    if os.path.exists(path):
-                        actual_file = path
-                        break
-                
-                if not actual_file:
-                    raise Exception("Could not find downloaded file in processing directory")
+            # Find the actual resulting file
+            # yt-dlp might have changed the ext during merge
+            candidate_exts = [format_id if format_id != 'any' else 'mp4', 'mp4', 'mkv', 'webm', 'm4a', 'mp3', 'wav', 'jpg', 'webp']
+            actual_file = None
+            
+            # Try the direct name first using task_id
+            possible_paths = [
+                os.path.join("processing", f"{task_id}.{ext}") for ext in candidate_exts
+            ]
+            
+            for path in possible_paths:
+                if os.path.exists(path):
+                    actual_file = path
+                    break
+            
+            if not actual_file:
+                raise Exception("Could not find downloaded file in processing directory")
 
-                # Move to final location with sanitized title
-                # Ensure we don't have double dots or spaces between title and extension
-                ext = actual_file.rsplit('.', 1)[-1].strip().lower()
-                safe_title = sanitize_filename(title)
-                
-                # Construct final filename: Title.ext
-                final_filename = f"{safe_title}.{ext}"
+            # Move to final location with sanitized title
+            # Ensure we don't have double dots or spaces between title and extension
+            ext = actual_file.rsplit('.', 1)[-1].strip().lower()
+            safe_title = sanitize_filename(title)
+            
+            # Construct final filename: Title.ext
+            final_filename = f"{safe_title}.{ext}"
+            final_path = os.path.join("downloads", final_filename)
+            
+            # If file already exists, add timestamp to avoid collision
+            if os.path.exists(final_path):
+                final_filename = f"{safe_title}_{int(time.time())}.{ext}"
                 final_path = os.path.join("downloads", final_filename)
-                
-                # If file already exists, add timestamp to avoid collision
-                if os.path.exists(final_path):
-                    final_filename = f"{safe_title}_{int(time.time())}.{ext}"
-                    final_path = os.path.join("downloads", final_filename)
 
-                shutil.move(actual_file, final_path)
-                
-                # Double check size for logging
-                file_size = os.path.getsize(final_path)
-                print(f"Success: {final_path} ({file_size} bytes)")
-                
-                # 4. FINISH
-                final_filename = os.path.basename(final_path)
-                asyncio.run_coroutine_threadsafe(manager.broadcast({
-                    'type': 'finished',
-                    'id': task_id,
-                    'filename': final_filename,
-                    'file_size': file_size,
-                    'status': 'finished'
-                }), self.loop)
+            shutil.move(actual_file, final_path)
+            
+            # Double check size for logging
+            file_size = os.path.getsize(final_path)
+            print(f"Success: {final_path} ({file_size} bytes)")
+            
+            # 4. FINISH
+            final_filename = os.path.basename(final_path)
+            self._broadcast_progress({
+                'type': 'finished',
+                'id': task_id,
+                'filename': final_filename,
+                'file_size': file_size,
+                'status': 'finished'
+            })
 
         except Exception as e:
             print(f"Error downloading {url}: {e}")

@@ -55,6 +55,7 @@ export default function OurTubeApp() {
     const [connected, setConnected] = useState(false);
     const [strictMode, setStrictMode] = useState(false);
     const [splitChapters, setSplitChapters] = useState(false);
+    const [lastError, setLastError] = useState("");
     const myIds = useRef<Set<string>>(new Set());
 
     useEffect(() => {
@@ -80,7 +81,10 @@ export default function OurTubeApp() {
                     return valid;
                 });
             }
-        }).catch(err => console.error("Failed to sync library status:", err));
+        }).catch(err => {
+            console.error("Failed to sync library status:", err);
+            setLastError(err.message || "Could not reach the OurTube backend");
+        });
 
         // Load myIds from local storage
         const savedIds = localStorage.getItem("ourtube_my_ids");
@@ -150,11 +154,15 @@ export default function OurTubeApp() {
                         if (downloadId) delete next[downloadId];
                         return next;
                     });
-                    alert(`Download failed: ${error || 'Unknown error'}`);
+                    setLastError(error || 'Download failed');
                 }
             },
-            () => setConnected(true), // OnOpen
-            () => setConnected(false) // OnClose
+            () => {
+                setConnected(true);
+                setLastError("");
+            },
+            () => setConnected(false),
+            () => setConnected(false)
         );
 
         return () => ws.close();
@@ -168,9 +176,23 @@ export default function OurTubeApp() {
         const taskId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
 
         try {
+            setLastError("");
+
             // 1. Register ID as "mine" IMMEDIATELY
             myIds.current.add(taskId);
             localStorage.setItem("ourtube_my_ids", JSON.stringify(Array.from(myIds.current)));
+
+            setActiveDownloads((prev: any) => ({
+                ...prev,
+                [taskId]: {
+                    id: taskId,
+                    filename: url,
+                    percent: "0%",
+                    speed: "Queued",
+                    eta: "Waiting...",
+                    status: "queued",
+                }
+            }));
 
             // 2. Send request with this ID
             const response = await api.startDownload(url, format, quality, taskId, strictMode, splitChapters);
@@ -184,10 +206,14 @@ export default function OurTubeApp() {
             setUrl("");
         } catch (e) {
             console.error(e);
-            alert("Failed to start download");
-            // Cleanup on explicit failure (optional, but keeps list clean)
-            // myIds.current.delete(taskId);
-            // localStorage.setItem("ourtube_my_ids", JSON.stringify(Array.from(myIds.current)));
+            setLastError(e instanceof Error ? e.message : "Failed to start download");
+            setActiveDownloads((prev: any) => {
+                const next = { ...prev };
+                delete next[taskId];
+                return next;
+            });
+            myIds.current.delete(taskId);
+            localStorage.setItem("ourtube_my_ids", JSON.stringify(Array.from(myIds.current)));
         }
     };
 
@@ -260,6 +286,12 @@ export default function OurTubeApp() {
                 <main className="flex-1 w-full max-w-3xl mx-auto p-4 md:p-8 space-y-12 bg-black/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/5 relative z-10 mt-8 mb-8">
                     {/* Input Section */}
                     <div className="space-y-6">
+                        {lastError && (
+                            <div className="border border-red-500/30 bg-red-500/10 text-red-100 rounded-xl px-4 py-3 text-sm">
+                                {lastError}
+                            </div>
+                        )}
+
                         <div className="flex flex-col md:flex-row gap-3">
                             <div className="relative flex-1 group">
                                 <input

@@ -125,6 +125,27 @@ def sanitize_filename(name: str) -> str:
     # 4. Limit length
     return sanitized[:120]
 
+def normalize_filename_for_lookup(name: str) -> str:
+    safe_name = sanitize_filename(name).lower()
+    stem, ext = os.path.splitext(safe_name)
+    stem = re.sub(r'_\d{9,}$', '', stem)
+    return f"{stem}{ext}"
+
+def filenames_match(requested_name: str, candidate_name: str) -> bool:
+    requested_safe = sanitize_filename(requested_name)
+    candidate_safe = sanitize_filename(candidate_name)
+
+    requested_lower = requested_safe.lower()
+    candidate_lower = candidate_safe.lower()
+
+    if requested_lower == candidate_lower:
+        return True
+
+    if normalize_filename_for_lookup(requested_safe) == normalize_filename_for_lookup(candidate_safe):
+        return True
+
+    return requested_lower in candidate_lower or candidate_lower in requested_lower
+
 @app.get("/api/v2/download/{filename}")
 def download_file_v2(filename: str):
     """Old path-based download. Keeping for fallback but deprecated."""
@@ -159,9 +180,9 @@ def process_download(filename: str):
     # find the closest matching file in the directory.
     try:
         files = os.listdir(downloads_dir)
-        # Try finding a file that contains our sanitized string (ignoring case)
+        # Allow fallback matches for stale timestamp-suffixed filenames.
         for f in files:
-            if safe_filename.lower() in f.lower() or f.lower() in safe_filename.lower():
+            if filenames_match(safe_filename, f):
                 return FileResponse(
                     path=os.path.join(downloads_dir, f),
                     filename=f,
@@ -200,7 +221,7 @@ def delete_download(filename: str):
     try:
         files = os.listdir(downloads_dir)
         for f in files:
-            if safe_filename.lower() in f.lower() or f.lower() in safe_filename.lower():
+            if filenames_match(safe_filename, f):
                 fuzzy_path = os.path.join(downloads_dir, f)
                 os.remove(fuzzy_path)
                 return {"status": "deleted", "filename": f}

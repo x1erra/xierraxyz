@@ -10,13 +10,6 @@ services:
       - "8000:8000"
     restart: unless-stopped
 
-  frontend:
-    build: ./frontend
-    container_name: ourtube-frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: ourtube-tunnel
@@ -26,7 +19,6 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
-      - frontend
 
 volumes:
   downloads:

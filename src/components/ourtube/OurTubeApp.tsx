@@ -84,16 +84,30 @@ const mergeLibrary = (current: CompletedDownload[], incoming: CompletedDownload[
     return Array.from(merged.values()).sort((a, b) => b.date - a.date);
 };
 
+const trimMetric = (value?: string) => (typeof value === "string" ? value.trim() : value);
+
+const isProcessingFilename = (value?: string) => Boolean(value && /^processing[\\/]/.test(value));
+
 const applyTaskUpdate = (
     current: ActiveDownload | undefined,
     update: Partial<ActiveDownload> & Partial<BackendTask>,
 ): ActiveDownload => {
     const updatedAt = typeof update.updated_at === "number" ? update.updated_at * 1000 : Date.now();
+    const incomingFilename = update.filename;
+    const currentFilename = current?.filename;
+    const nextFilename =
+        isProcessingFilename(incomingFilename) && currentFilename && !isProcessingFilename(currentFilename)
+            ? currentFilename
+            : incomingFilename ?? currentFilename;
 
     return {
         ...current,
         ...update,
         id: update.id || current?.id || "",
+        filename: nextFilename,
+        percent: trimMetric(update.percent) ?? current?.percent,
+        speed: trimMetric(update.speed) ?? current?.speed,
+        eta: trimMetric(update.eta) ?? current?.eta,
         createdAt: current?.createdAt ?? (typeof update.created_at === "number" ? update.created_at * 1000 : Date.now()),
         lastUpdateAt: updatedAt,
     };
@@ -109,6 +123,13 @@ const getStatusTone = (status?: string) => {
     if (status === "error") return "border-red-500/30 bg-red-500/10 text-red-200";
     if (status === "downloading" || status === "merging") return "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
     return "border-white/10 bg-black/40 text-zinc-400";
+};
+
+const shouldShowSpeed = (download: ActiveDownload) => {
+    const speed = trimMetric(download.speed);
+    if (!speed) return false;
+
+    return speed.toLowerCase() !== formatStatusLabel(download.status).toLowerCase();
 };
 
 const InfoTooltip = ({ text }: { text: string }) => {
@@ -197,6 +218,8 @@ export default function OurTubeApp() {
         });
     };
 
+    const ownsDownload = (downloadId: string) => myIds.current.has(downloadId) || Boolean(activeDownloadsRef.current[downloadId]);
+
     useEffect(() => {
         // Load library from local storage
         const savedLibrary = localStorage.getItem("ourtube_library");
@@ -241,7 +264,7 @@ export default function OurTubeApp() {
                 const downloadId = id || (nestedData && nestedData.id);
 
                 if (type === "progress" && downloadId) {
-                    if (!myIds.current.has(downloadId)) return;
+                    if (!ownsDownload(downloadId)) return;
 
                     setActiveDownloads((prev) => ({
                         ...prev,
@@ -256,7 +279,7 @@ export default function OurTubeApp() {
                         }),
                     }));
                 } else if (type === "finished" && downloadId) {
-                    if (!myIds.current.has(downloadId)) {
+                    if (!ownsDownload(downloadId)) {
                         // Clean up active if it was there (shouldn't be, but good hygiene)
                         setActiveDownloads((prev) => {
                             const next = { ...prev };
@@ -283,7 +306,7 @@ export default function OurTubeApp() {
 
                     void syncServerStatus().catch(() => null);
 
-                } else if (type === "error") {
+                } else if (type === "error" && downloadId && ownsDownload(downloadId)) {
                     console.error("Download error:", error);
                     setActiveDownloads((prev) => {
                         const next = { ...prev };
@@ -670,7 +693,9 @@ export default function OurTubeApp() {
                                         </div>
 
                                         <div className="flex items-center justify-between md:justify-end gap-6 text-xs font-mono text-zinc-400 z-10">
-                                            <span className="bg-black/50 px-2 py-1 rounded border border-white/10">{d.speed}</span>
+                                            {shouldShowSpeed(d) && (
+                                                <span className="bg-black/50 px-2 py-1 rounded border border-white/10">{trimMetric(d.speed)}</span>
+                                            )}
                                             <span className="bg-black/50 px-2 py-1 rounded border border-white/10">{d.eta}</span>
                                             <span className="text-white font-bold">{d.percent}</span>
                                         </div>

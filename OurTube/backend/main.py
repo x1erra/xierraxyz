@@ -7,6 +7,7 @@ import asyncio
 import os
 import shutil
 from typing import List
+from yt_dlp.version import __version__ as YT_DLP_VERSION
 
 from socket_manager import manager
 from downloader import downloader_service
@@ -46,6 +47,7 @@ def get_debug_status():
     files = os.listdir("downloads")
     return {
         "status": "online",
+        "yt_dlp_version": YT_DLP_VERSION,
         "downloads_count": len(files),
         "files": files
     }

@@ -1,5 +1,7 @@
 fastapi
 uvicorn
-yt-dlp
+# Current YouTube extraction increasingly depends on the JS runtime helpers
+# shipped via the deno extra; curl-cffi matches the upstream MeTube stack.
+yt-dlp[default,curl-cffi,deno]>=2026.3.17
 websockets
 python-multipart

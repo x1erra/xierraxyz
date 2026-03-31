@@ -7,6 +7,7 @@ import asyncio
 import os
 import shutil
 from typing import List
+from urllib.parse import quote
 from yt_dlp.version import __version__ as YT_DLP_VERSION
 
 from socket_manager import manager
@@ -77,6 +78,36 @@ async def start_download(request: DownloadRequest):
     print(f"Download scheduled with ID {task_id}, returning response.")
     return {"status": "started", "url": request.url, "id": task_id}
 
+@app.get("/api/downloads")
+def list_downloads():
+    downloads_dir = os.path.abspath("downloads")
+
+    if not os.path.exists(downloads_dir):
+        return []
+
+    files = []
+    for filename in os.listdir(downloads_dir):
+        path = os.path.join(downloads_dir, filename)
+        if not os.path.isfile(path):
+            continue
+
+        files.append({
+            "filename": filename,
+            "size": os.path.getsize(path),
+            "modified": os.path.getmtime(path),
+            "url": f"/api/v3/download?filename={quote(filename)}",
+        })
+
+    files.sort(key=lambda item: item["modified"], reverse=True)
+
+    return [
+        {
+            "filename": item["filename"],
+            "size": item["size"],
+            "url": item["url"],
+        }
+        for item in files
+    ]
 
 
 

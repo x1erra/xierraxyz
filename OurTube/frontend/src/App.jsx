@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from './api';
-import { Download, Trash2, Youtube, Settings2 } from 'lucide-react';
+import { Download, Trash2, Settings2 } from 'lucide-react';
 import Starfield from './components/Starfield';
 
 function App() {
@@ -12,30 +12,50 @@ function App() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [connected, setConnected] = useState(false);
+  const [lastError, setLastError] = useState("");
 
   useEffect(() => {
-    // Initial fetch of downloads
-    api.getDownloads().then(setCompletedDownloads);
+    const refreshDownloads = async () => {
+      try {
+        setCompletedDownloads(await api.getDownloads());
+      } catch (error) {
+        console.error(error);
+        setLastError(error.message);
+      }
+    };
 
-    // Connect to WebSocket
+    refreshDownloads();
+
     const ws = api.connectWebSocket((data) => {
+      const payload = data.data ?? data;
+
       if (data.type === "progress") {
         setActiveDownloads((prev) => ({
           ...prev,
-          [data.data.id]: { ...prev[data.data.id], ...data.data },
+          [payload.id]: { ...prev[payload.id], ...payload },
         }));
       } else if (data.type === "finished") {
         setActiveDownloads((prev) => {
           const next = { ...prev };
-          delete next[data.data.id];
+          delete next[payload.id];
           return next;
         });
-        // Refresh library
-        api.getDownloads().then(setCompletedDownloads);
+        refreshDownloads();
+      } else if (data.type === "error") {
+        setActiveDownloads((prev) => {
+          const next = { ...prev };
+          delete next[payload.id];
+          return next;
+        });
+        setLastError(payload.error || "Download failed");
       } else if (data.type === "connected") {
         setConnected(true);
+        setLastError("");
       }
     });
+
+    ws.addEventListener("close", () => setConnected(false));
+    ws.addEventListener("error", () => setConnected(false));
 
     return () => ws.close();
   }, []);
@@ -43,11 +63,23 @@ function App() {
   const handleDownload = async () => {
     if (!url) return;
     try {
-      await api.startDownload(url, format, quality);
+      setLastError("");
+      const download = await api.startDownload(url, format, quality);
+      setActiveDownloads((prev) => ({
+        ...prev,
+        [download.id]: {
+          id: download.id,
+          filename: url,
+          percent: "0%",
+          speed: "Queued",
+          eta: "Waiting...",
+          status: "queued",
+        },
+      }));
       setUrl("");
     } catch (e) {
       console.error(e);
-      alert("Failed to start download");
+      setLastError(e.message || "Failed to start download");
     }
   };
 
@@ -75,8 +107,10 @@ function App() {
               <span className="text-xl font-mono tracking-widest text-gray-300">OURTUBE</span>
             </div>
             <div className="flex items-center gap-2 mt-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-              <span className="text-[10px] font-bold tracking-widest text-xierra-muted uppercase">System Ready</span>
+              <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-green-500" : "bg-amber-400"}`}></div>
+              <span className="text-[10px] font-bold tracking-widest text-xierra-muted uppercase">
+                {connected ? "Live Updates Ready" : "Realtime Offline"}
+              </span>
             </div>
           </div>
 
@@ -92,6 +126,12 @@ function App() {
       <main className="max-w-3xl mx-auto p-4 md:p-8 space-y-12 bg-black/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/5 relative z-10 mt-8">
         {/* Input Section */}
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          {lastError && (
+            <div className="border border-red-500/30 bg-red-500/10 text-red-100 rounded-xl px-4 py-3 text-sm">
+              {lastError}
+            </div>
+          )}
+
           <div className="flex flex-col md:flex-row gap-3">
             <input
               type="text"
@@ -230,7 +270,7 @@ function App() {
                   <div className="w-2 h-2 rounded-full bg-white/20 group-hover:bg-green-400 shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all"></div>
                   <div className="flex flex-col min-w-0">
                     <a
-                      href={`http://localhost:8000${file.url}`}
+                      href={api.resolveUrl(file.url || api.getDownloadUrl(file.filename))}
                       target="_blank"
                       rel="noreferrer"
                       className="text-sm text-gray-200 hover:text-white truncate font-medium transition"
@@ -242,7 +282,7 @@ function App() {
                 </div >
 
                 <div className="flex items-center gap-2 md:gap-4 md:opacity-0 md:group-hover:opacity-100 transition-all ml-4">
-                  <a href={`http://localhost:8000${file.url}`} download className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition">
+                  <a href={api.resolveUrl(file.url || api.getDownloadUrl(file.filename))} download className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition">
                     <Download size={16} />
                   </a>
                   <button onClick={() => handleDelete(file.filename)} className="p-2 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition">

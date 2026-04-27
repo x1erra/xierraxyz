@@ -6,6 +6,9 @@ services:
     container_name: ourtube-backend
     volumes:
       - ./downloads:/app/downloads
+      - ./cookies:/app/cookies:ro
+    environment:
+      - OURTUBE_INSTAGRAM_COOKIES=/app/cookies/instagram.txt
     ports:
       - "8000:8000"
     restart: unless-stopped

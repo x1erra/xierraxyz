@@ -5,6 +5,7 @@ import os
 import shutil
 import time
 import re
+from urllib.parse import urlparse, urlunparse
 from socket_manager import manager
 
 import uuid
@@ -23,6 +24,36 @@ def sanitize_filename(name):
 def is_youtube_url(url: str) -> bool:
     lowered = url.lower()
     return "youtube.com/" in lowered or "youtu.be/" in lowered
+
+def is_instagram_url(url: str) -> bool:
+    parsed = urlparse(url.strip())
+    if not parsed.hostname:
+        parsed = urlparse(f"https://{url.strip()}")
+
+    hostname = parsed.hostname or ""
+    hostname = hostname.lower()
+    return hostname == "instagram.com" or hostname.endswith(".instagram.com")
+
+def normalize_instagram_url(url: str) -> str:
+    parsed = urlparse(url.strip())
+
+    if not parsed.scheme:
+        parsed = urlparse(f"https://{url.strip()}")
+
+    if not is_instagram_url(parsed.geturl()):
+        return url.strip()
+
+    # Instagram share URLs often carry tracking parameters that can confuse
+    # extractors. The post/reel/story identifier is in the path.
+    path = re.sub(r"/+", "/", parsed.path)
+    return urlunparse((
+        parsed.scheme or "https",
+        parsed.netloc or "www.instagram.com",
+        path,
+        "",
+        "",
+        "",
+    ))
 
 class Downloader:
     def __init__(self):
@@ -130,6 +161,42 @@ class Downloader:
             ydl.process_ie_result(info, download=True)
             return title
 
+    def _instagram_cookie_file(self):
+        candidate_paths = [
+            os.getenv("OURTUBE_INSTAGRAM_COOKIES"),
+            os.getenv("OURTUBE_COOKIES_FILE"),
+            "/app/cookies/instagram.txt",
+        ]
+
+        for path in candidate_paths:
+            if path and os.path.exists(path):
+                return path
+
+        return None
+
+    def _apply_instagram_options(self, ydl_opts):
+        ydl_opts.update({
+            'http_headers': {
+                'User-Agent': (
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                    'AppleWebKit/537.36 (KHTML, like Gecko) '
+                    'Chrome/124.0.0.0 Safari/537.36'
+                ),
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://www.instagram.com/',
+            },
+            'extractor_retries': 5,
+            'socket_timeout': 30,
+            'sleep_interval_requests': 1,
+            'impersonate': 'chrome',
+        })
+
+        cookie_file = self._instagram_cookie_file()
+        if cookie_file:
+            ydl_opts['cookiefile'] = cookie_file
+
+        return ydl_opts
+
     def _download_task(self, task_id, url, format_id, quality, strict_mode, split_chapters):
         # We use the ID as the temporary filename to avoid collisions and special char issues in paths
         
@@ -147,6 +214,9 @@ class Downloader:
                 }
                 self._broadcast_progress(data)
         
+        url = normalize_instagram_url(url) if is_instagram_url(url) else url
+        is_instagram = is_instagram_url(url)
+
         ydl_opts = {
             'outtmpl': f'processing/{task_id}.%(ext)s', # Use task_id for tracking temp file
             'progress_hooks': [progress_hook],
@@ -180,7 +250,11 @@ class Downloader:
              # We will try to force a single format if possible or better merging
              format_selector = 'bestvideo+bestaudio/best'
              
-             if quality == 'best':
+             if is_instagram:
+                 # Instagram generally exposes progressive MP4s. Prefer one
+                 # complete file before falling back to split/merged formats.
+                 format_selector = 'best[ext=mp4]/best/bestvideo*+bestaudio'
+             elif quality == 'best':
                  # Force H.264 (avc1) and AAC (mp4a) for maximum compatibility (Linux/iOS/Windows)
                  # Fallback to best mp4, then best available if strict codecs aren't found
                  format_selector = 'bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/best[ext=mp4]/best'
@@ -190,14 +264,17 @@ class Downloader:
                  format_selector = 'worstvideo+worstaudio/worst'
              elif quality.endswith('p'):
                  height = quality[:-1]
-                 format_selector = f'bestvideo[height<={height}]+bestaudio/best[height<={height}]'
+                 if is_instagram:
+                     format_selector = f'best[height<={height}][ext=mp4]/best[height<={height}]/best'
+                 else:
+                     format_selector = f'bestvideo[height<={height}]+bestaudio/best[height<={height}]'
              
              ydl_opts['format'] = format_selector
              ydl_opts['merge_output_format'] = 'mp4' if format_id == 'mp4' or format_id == 'any' else None
         
         
-        # Instagram/Twitter specific headers or cookies might be needed here
-        # yt-dlp handles many automatically, but we can enhance it.
+        if is_instagram:
+            ydl_opts = self._apply_instagram_options(ydl_opts)
         
         try:
             title = None
@@ -303,12 +380,21 @@ class Downloader:
 
         except Exception as e:
             print(f"Error downloading {url}: {e}")
+            error_message = str(e)
+            if is_instagram:
+                cookie_hint = (
+                    " Instagram may require login cookies for this URL. "
+                    "Export Instagram cookies to /app/cookies/instagram.txt "
+                    "or set OURTUBE_INSTAGRAM_COOKIES to the cookie file path."
+                )
+                if "cookies" not in error_message.lower() and "login" not in error_message.lower():
+                    error_message = f"{error_message}{cookie_hint}"
             # Broadcast error
             self._broadcast_progress({
                 'type': 'error',
                 'url': url,
                 'id': task_id,
-                'error': str(e),
+                'error': error_message,
                 'status': 'error',
             })
     
